@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\EnderecoController;
+use App\Http\Controllers\TipoDocumentoController;
 use App\Http\Controllers\UnidadeController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -33,4 +34,11 @@ Route::get('/endereco/{id}', [EnderecoController::class, 'show'])->name('enderec
 Route::put('/endereco/{id}', [EnderecoController::class, 'update'])->name('endereco.update');
 Route::delete('/endereco/{id}', [EnderecoController::class, 'destroy'])->name('endereco.destroy');
 Route::post('/endereco', [EnderecoController::class, 'store'])->name('endereco.store');
+
+// routes tipoDocumento
+Route::get('/tipo-documento', [TipoDocumentoController::class, 'index'])->name('tipo-documento.show');
+Route::get('/tipo-documento/{id}', [TipoDocumentoController::class, 'show'])->name('tipo-documento.detalhes');
+Route::put('/tipo-documento/{id}', [TipoDocumentoController::class, 'update'])->name('tipo-documento.update');
+Route::delete('/tipo-documento/{id}', [TipoDocumentoController::class, 'destroy'])->name('tipo-documento.destroy');
+Route::post('/tipo-documento', [TipoDocumentoController::class, 'store'])->name('tipo-documento.store');
 
