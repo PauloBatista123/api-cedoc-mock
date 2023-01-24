@@ -20,11 +20,17 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
+// routes unidades
 Route::get('/unidade', [UnidadeController::class, 'index'])->name('unidade.show');
 Route::get('/unidade/{id}', [UnidadeController::class, 'show'])->name('unidade.detalhes');
 Route::put('/unidade/{id}', [UnidadeController::class, 'update'])->name('unidade.update');
 Route::delete('/unidade/{id}', [UnidadeController::class, 'destroy'])->name('unidade.destroy');
 Route::post('/unidade', [UnidadeController::class, 'store'])->name('unidade.store');
 
+// routes endereços
 Route::get('/endereco', [EnderecoController::class, 'index'])->name('endereco.show');
+Route::get('/endereco/{id}', [EnderecoController::class, 'show'])->name('endereco.detalhes');
+Route::put('/endereco/{id}', [EnderecoController::class, 'update'])->name('endereco.update');
+Route::delete('/endereco/{id}', [EnderecoController::class, 'destroy'])->name('endereco.destroy');
+Route::post('/endereco', [EnderecoController::class, 'store'])->name('endereco.store');
 

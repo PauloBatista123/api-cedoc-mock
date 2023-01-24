@@ -9,6 +9,7 @@ use Illuminate\Http\Resources\Json\ResourceCollection;
 
 class EnderecoCollectionResource extends ResourceCollection
 {
+
     /**
      * Transform the resource into an array.
      *
@@ -17,9 +18,7 @@ class EnderecoCollectionResource extends ResourceCollection
      */
     public function toArray($request)
     {
-        return [
-            'data' => $this->collection,
-        ];
+        return parent::toArray($request);
     }
 
 

@@ -22,6 +22,7 @@ class UnidadeStoreRequest extends FormRequest
      *
      * @return array<string, mixed>
      */
+
     public function rules()
     {
         return [

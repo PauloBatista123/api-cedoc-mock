@@ -28,7 +28,7 @@ class EnderecoController extends Controller
     {
         try {
 
-            $enderecos = $this->endereco->orderBy('rua')->get();
+            $enderecos = $this->endereco->with('unidade')->orderBy('rua')->get();
 
             return new EnderecoCollectionResource($enderecos);
 

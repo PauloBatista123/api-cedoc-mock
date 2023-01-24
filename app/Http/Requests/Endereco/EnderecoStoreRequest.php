@@ -25,9 +25,9 @@ class EnderecoStoreRequest extends FormRequest
     public function rules()
     {
         return [
-            'rua' => 'required|min:3|max:191',
-            'avenida' => 'required|min:3|max:191',
-            'andar' => 'required|min:3|max:191',
+            'rua' => 'required|min:1|max:191',
+            'avenida' => 'required|min:1|max:191',
+            'andar' => 'required|min:1|max:191',
             'unidade_id' => 'required|exists:App\Models\Unidade,id',
         ];
     }
@@ -47,7 +47,7 @@ class EnderecoStoreRequest extends FormRequest
             'andar.required' => 'o campo :attribute é obrigatório',
             'andar.min' => 'o campo :attribute deve conter no minimo :min caracteres',
             'andar.max' => 'o campo :attribute deve conter no maximo :max caracteres',
-            'unidade_id.required' => 'o campo :attribute é obrigatório',
+            'unidade_id.required' => 'o campo unidade_id é obrigatório',
             'unidade_id.exists' => 'o relacionamento não existe para o id informado',
         ];
      }
