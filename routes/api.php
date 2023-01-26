@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CaixaController;
 use App\Http\Controllers\EnderecoController;
 use App\Http\Controllers\TipoDocumentoController;
 use App\Http\Controllers\UnidadeController;
@@ -42,3 +43,9 @@ Route::put('/tipo-documento/{id}', [TipoDocumentoController::class, 'update'])->
 Route::delete('/tipo-documento/{id}', [TipoDocumentoController::class, 'destroy'])->name('tipo-documento.destroy');
 Route::post('/tipo-documento', [TipoDocumentoController::class, 'store'])->name('tipo-documento.store');
 
+// routes caixas
+Route::get('/caixa', [CaixaController::class, 'index'])->name('caixa.show');
+Route::get('/caixa/{id}', [CaixaController::class, 'show'])->name('caixa.detalhes');
+Route::put('/caixa/{id}', [CaixaController::class, 'update'])->name('caixa.update');
+Route::delete('/caixa/{id}', [CaixaController::class, 'destroy'])->name('caixa.destroy');
+Route::post('/caixa', [CaixaController::class, 'store'])->name('caixa.store');

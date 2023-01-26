@@ -24,13 +24,24 @@ class TipoDocumentoController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
         try {
 
-            $tipoDocumentos = $this->tipoDocumento->orderBy('descricao')->get();
+            $where = [];
+            $ordem = 'id';
 
-            return new TipoDocumentoCollectionResource($tipoDocumentos);
+            if($request->get('descricao') !== null){
+                array_push($where, ['descricao', 'like', '%'.$request->get('descricao').'%']);
+            }
+
+            if($request->get('ordem') !== null){
+                $ordem = $request->get('ordem');
+            }
+
+            $query = $this->tipoDocumento->where($where)->orderBy($ordem)->paginate(10);
+
+            return new TipoDocumentoCollectionResource($query);
 
         } catch (\Throwable|Exception $e) {
 
