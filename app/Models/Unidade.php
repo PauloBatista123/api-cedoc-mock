@@ -15,4 +15,9 @@ class Unidade extends Model
         'nome',
         'status'
     ];
+
+    public function enderecos()
+    {
+        return $this->hasMany(Endereco::class, 'unidade_id', 'id');
+    }
 }

@@ -26,17 +26,34 @@ class UnidadeController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
         try {
 
-            $unidades = $this->unidade->orderBy('nome')->get();
+            $query = $this->unidade
+                          ->when($request->get('nome'), function ($query) use ($request) {
+                             $query->where('nome', 'like', '%'.$request->get('nome').'%');
+                          })
+                          ->when($request->get('status'), function ($query) use ($request) {
+                             $query->where('status', '=', $request->get('status'));
+                          })
+                          ->when($request->get('ordem'), function($query) use ($request) {
+                            $query->orderBy($request->get('ordem'));
+                          }, function ($query){
+                            $query->orderBy('id');
+                          })->when($request->get('page'), function ($query) use($request){
+                            if($request->get('page') < 0){
+                                return $query->get();
+                            }
+                            return $query->paginate(10);
+                          });
 
-            return new UnidadeCollectionResource($unidades);
+
+            return new UnidadeCollectionResource($query);
 
         } catch (\Throwable|Exception $e) {
 
-            return ResponseService::exception('unidade.index', null, $e);
+            return ResponseService::exception('unidade.show', null, $e);
         }
 
     }
@@ -131,10 +148,15 @@ class UnidadeController extends Controller
     public function destroy($id)
     {
         try {
+
             $unidade = $this->unidade->find($id);
 
             if(!$unidade){
                 throw new Exception('Nenhum registro encontrado.');
+            }
+
+            if(count($unidade->enderecos)){
+                throw new Exception('Não podemos excluir a unidade pois possui endereços vinculados...');
             }
 
             $unidade->delete();
