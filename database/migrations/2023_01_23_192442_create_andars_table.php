@@ -13,12 +13,13 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('historico_arquivos', function (Blueprint $table) {
+        Schema::create('andars', function (Blueprint $table) {
             $table->id();
-            $table->date('data_fim');
-            $table->date('data_inicio');
-            $table->enum('status', ['arquivado', 'expurgar'])->default('arquivado');
+            $table->string('numero')->index();
+            $table->unsignedBigInteger('predio_id');
             $table->timestamps();
+
+            $table->foreign('predio_id')->references('id')->on('predios');
         });
     }
 
@@ -29,6 +30,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('historico_arquivos');
+        Schema::dropIfExists('enderecos');
     }
 };

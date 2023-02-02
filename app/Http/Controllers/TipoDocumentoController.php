@@ -28,18 +28,21 @@ class TipoDocumentoController extends Controller
     {
         try {
 
-            $where = [];
-            $ordem = 'id';
+            $query = $this->tipoDocumento
+            ->when($request->get('descricao'), function ($query) use ($request) {
+                $query->where('descricao', 'like', '%' . $request->get('descricao') . '%');
+            })
+            ->when($request->get('ordem'), function ($query) use ($request) {
+                $query->orderBy($request->get('ordem'));
+            }, function ($query) {
+                $query->orderBy('id');
+            })->when($request->get('page'), function ($query) use ($request) {
+                if ($request->get('page') < 0) {
+                    return $query->get();
+                }
+                return $query->paginate(10);
+            });
 
-            if($request->get('descricao') !== null){
-                array_push($where, ['descricao', 'like', '%'.$request->get('descricao').'%']);
-            }
-
-            if($request->get('ordem') !== null){
-                $ordem = $request->get('ordem');
-            }
-
-            $query = $this->tipoDocumento->where($where)->orderBy($ordem)->paginate(10);
 
             return new TipoDocumentoCollectionResource($query);
 

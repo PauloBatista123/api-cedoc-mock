@@ -13,19 +13,21 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('caixas', function (Blueprint $table) {
+        Schema::create('historico_arquivos', function (Blueprint $table) {
             $table->id();
-            $table->enum('status', ['disponivel', 'ocupado'])->default('disponivel');
-            $table->string('numero')->unique();
-            $table->decimal('espaco_total', 8, 2);
-            $table->decimal('espaco_ocupado', 8, 2)->nullable();
-            $table->decimal('espaco_disponivel', 8, 2)->nullable();
+            $table->date('data_fim');
+            $table->date('data_inicio');
+            $table->enum('status', ['arquivado', 'expurgar'])->default('arquivado');
             $table->unsignedBigInteger('predio_id');
             $table->unsignedBigInteger('andar_id');
+            $table->unsignedBigInteger('caixa_id');
+            $table->unsignedBigInteger('documento_id');
             $table->timestamps();
 
             $table->foreign('predio_id')->references('id')->on('predios');
             $table->foreign('andar_id')->references('id')->on('andars');
+            $table->foreign('caixa_id')->references('id')->on('caixas');
+            $table->foreign('documento_id')->references('id')->on('documentos');
         });
     }
 
@@ -36,6 +38,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('caixas');
+        Schema::dropIfExists('historico_arquivos');
     }
 };

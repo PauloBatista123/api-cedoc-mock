@@ -1,16 +1,14 @@
 <?php
 
-namespace App\Http\Resources\Unidade;
+namespace App\Http\Resources\Documento;
 
-use App\Models\Andar;
 use App\Services\ResponseService;
 use Carbon\Carbon;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class UnidadeResource extends JsonResource
+class DocumentoResource extends JsonResource
 {
-
-    private $config;
+   private $config;
 
       /**
      * Create a new resource instance.
@@ -35,9 +33,9 @@ class UnidadeResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'numero' => $this->numero,
+            'tipoDocumento' => $this->tipoDocumento,
             'status' => $this->status,
-            'andares' => $this->andares,
+            'caixa' => $this->caixa,
             'created_at' => Carbon::parse($this->created_at)->format('d/m/Y H:i:s'),
             'updated_at' => Carbon::parse($this->updated_at)->format('d/m/Y H:i:s'),
         ];

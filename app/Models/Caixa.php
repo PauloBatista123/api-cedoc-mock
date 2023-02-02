@@ -15,13 +15,26 @@ class Caixa extends Model
         'status', 'numero', 'espaco_total', 'espaco_ocupado', 'espaco_disponivel', 'unidade_id', 'endereco_id'
     ];
 
-    public function unidade()
+    public function predio()
     {
-        return $this->belongsTo('App\Models\Unidade', 'unidade_id', 'id');
+        return $this->belongsTo(Unidade::class, 'predio_id', 'id');
     }
 
-    public function endereco()
+    public function documentos()
     {
-        return $this->belongsTo('App\Models\Endereco', 'endereco_id', 'id');
+        return $this->hasMany(Documento::class, 'caixa_id', 'id');
     }
+
+    /**
+     * Scope a query to only include users of a given type.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  mixed  $espaco
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+
+     public function scopeEspacoDisponivel($query, $espaco){
+        return $query->where([['status', '=' ,'disponivel'], ['espaco_disponivel', '>=', $espaco]]);
+     }
+
 }

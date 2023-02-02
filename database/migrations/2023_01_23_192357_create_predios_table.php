@@ -13,15 +13,12 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('enderecos', function (Blueprint $table) {
+        Schema::create('predios', function (Blueprint $table) {
             $table->id();
-            $table->string('rua');
-            $table->string('avenida');
-            $table->string('andar');
-            $table->unsignedBigInteger('unidade_id');
+            $table->string('numero')->unique();
+            $table->string('observacao')->nullable();
+            $table->enum('status', ['ativo', 'inativo'])->default('ativo');
             $table->timestamps();
-
-            $table->foreign('unidade_id')->references('id')->on('unidades');
         });
     }
 
@@ -32,6 +29,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('enderecos');
+        Schema::dropIfExists('unidades');
     }
 };

@@ -7,10 +7,12 @@ use App\Http\Requests\Unidade\UnidadeStoreRequest;
 use App\Http\Requests\Unidade\UnidadeUpdateRequest;
 use App\Http\Resources\Unidade\UnidadeCollectionResource;
 use App\Http\Resources\Unidade\UnidadeResource;
+use App\Models\Andar;
 use App\Models\Unidade;
 use App\Services\ResponseService;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class UnidadeController extends Controller
 {
@@ -31,22 +33,22 @@ class UnidadeController extends Controller
         try {
 
             $query = $this->unidade
-                          ->when($request->get('nome'), function ($query) use ($request) {
-                             $query->where('nome', 'like', '%'.$request->get('nome').'%');
-                          })
-                          ->when($request->get('status'), function ($query) use ($request) {
-                             $query->where('status', '=', $request->get('status'));
-                          })
-                          ->when($request->get('ordem'), function($query) use ($request) {
-                            $query->orderBy($request->get('ordem'));
-                          }, function ($query){
-                            $query->orderBy('id');
-                          })->when($request->get('page'), function ($query) use($request){
-                            if($request->get('page') < 0){
-                                return $query->get();
-                            }
-                            return $query->paginate(10);
-                          });
+                    ->when($request->get('nome'), function ($query) use ($request) {
+                        $query->where('nome', 'like', '%'.$request->get('nome').'%');
+                    })
+                    ->when($request->get('status'), function ($query) use ($request) {
+                        $query->where('status', '=', $request->get('status'));
+                    })
+                    ->when($request->get('ordem'), function($query) use ($request) {
+                    $query->orderBy($request->get('ordem'));
+                    }, function ($query){
+                    $query->orderBy('id');
+                    })->when($request->get('page'), function ($query) use($request){
+                    if($request->get('page') < 0){
+                        return $query->get();
+                    }
+                    return $query->paginate(10);
+                    });
 
 
             return new UnidadeCollectionResource($query);
@@ -68,14 +70,32 @@ class UnidadeController extends Controller
     {
         try {
 
-            $unidade = $this->unidade->create([
-                'nome' => $request->nome,
+            //inicia uma trasanção para o banco de dados (caso ocorra algum erro será realizado um rollback)
+            DB::beginTransaction();
+
+            $firstPredio = Unidade::orderBy('id', 'desc')->first();
+
+            $predio = Unidade::create([
+                'numero' => !is_null($firstPredio) ? (int) $firstPredio->numero + 1 : 1,
+                'observacao' => 'Predio criado automático pelo sistema',
                 'status' => 'ativo'
             ]);
 
-            return new UnidadeResource($unidade, ['route' => 'unidade.store', 'type' => 'store']);
+            for($i = 1; $i <= 9; $i++){
+                Andar::create([
+                    'numero' => $i,
+                    'predio_id' => $predio->id,
+                ]);
+            }
+
+
+            DB::commit();
+
+            return new UnidadeResource($predio, ['route' => 'unidade.store', 'type' => 'store']);
 
         }catch(\Throwable|\Exception $e) {
+
+            DB::rollback();
 
             return ResponseService::exception('unidade.store', null, $e);
         }
@@ -97,7 +117,7 @@ class UnidadeController extends Controller
                 throw new Exception('Informe o id do registro.');
             }
 
-            $unidade = $this->unidade->find($id);
+            $unidade = $this->unidade->with(['andares.caixas.documentos'])->find($id);
 
             if(!$unidade){
                 throw new Exception('Nenhum registro encontrado.');
