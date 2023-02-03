@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Ramsey\Uuid\Type\Integer;
 
 class Unidade extends Model
 {
@@ -22,7 +23,8 @@ class Unidade extends Model
         return $this->hasMany(Andar::class, 'predio_id', 'id');
     }
 
-    public static function localizacaoAndar($numero_caixas){
+    public static function localizacaoAndar($numero_caixas)
+    {
         if($numero_caixas >= 0 && $numero_caixas <= 7){
             return 1;
         }else if($numero_caixas >= 8 && $numero_caixas <= 14){
@@ -42,6 +44,28 @@ class Unidade extends Model
         }else{
             return 9;
         }
+    }
+
+    public static function getIdPredio($predio_id)
+    {
+        $predio = Unidade::find($predio_id);
+        $firstPredio = Unidade::orderByDesc('id')->first();
+
+        if(!$predio){
+            $predio = Unidade::create([
+                'numero' => !is_null($firstPredio) ? (int) $firstPredio->numero + 1 : 1,
+                'observacao' => 'Predio criado automático pelo sistema',
+                'status' => 'ativo'
+            ]);
+            for($i = 1; $i <= 9; $i++){
+                Andar::create([
+                    'numero' => $i,
+                    'predio_id' => $predio->id,
+                ]);
+            }
+        }
+
+        return $predio->id;
     }
 
 }

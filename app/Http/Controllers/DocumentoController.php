@@ -68,7 +68,6 @@ class DocumentoController extends Controller
     public function buscar_enderecamento(Request $request)
     {
         try{
-
             $espaco_ocupado = $request->get('espaco_ocupado');
             $numero = $request->get('numero');
 
@@ -82,7 +81,7 @@ class DocumentoController extends Controller
             }
             //ultima caixa lançada no sistema por ordem de numero (número é unico e ordem descrescente)
             $ultima_caixa = Caixa::
-            orderByDesc('caixas.numero')
+            orderByDesc('caixas.id')
             ->first();
 
             //total de caixas por predio - considerando ultima caixa recomendada pelo sistema
@@ -103,7 +102,7 @@ class DocumentoController extends Controller
             //validação do proximo endereço
             $proximo_endereco = (object) array('caixa_id' => '', 'predio_id' => '', 'andar_id' => '');
 
-            if($espaco_predio->espaco_disponivel_total == 0 && $espaco_predio->total_caixas === 63){
+            if($espaco_predio->espaco_disponivel_total == 0 || $espaco_predio->total_caixas === 63 && $ultima_caixa->espaco_disponivel < $espaco_ocupado){
                 //não existe espaço no predio e total de caixas já atingiu o máximo
                 $proximo_endereco->predio_id = $espaco_predio->predio_id + 1;
                 $proximo_endereco->caixa_id = $ultima_caixa->id + 1;
@@ -126,6 +125,7 @@ class DocumentoController extends Controller
                 'ultima_caixa' => $ultima_caixa,
                 'predio' => $espaco_predio,
                 'caixas' => $caixas,
+                'espaco_ocupado' => $espaco_ocupado,
             ]);
 
         } catch (\Throwable|Exception $e) {
@@ -136,7 +136,7 @@ class DocumentoController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Salvar endereço em um documento.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
@@ -150,8 +150,8 @@ class DocumentoController extends Controller
             $numero_documento = $request->get('numero');
             $espaco_ocupado = floatval($request->get('espaco_ocupado'));
             $numero_caixa = $request->get('numero_caixa');
-            $predio_id = $request->get('predio_id');
-            $andar_id = $request->get('andar_id');
+            $andar_id = (int) $request->get('andar_id');
+            $predio_id = Unidade::getIdPredio($request->get('predio_id'));
 
             //pegar informações do documento a ser endereçado
             $documento = $this->documento->where('documento', $numero_documento)->first();
@@ -189,7 +189,8 @@ class DocumentoController extends Controller
             $documento->update([
                 'espaco_ocupado' => $espaco_ocupado,
                 'status' => 'arquivado',
-                'caixa_id' => $documento->id,
+                'caixa_id' => $caixa->id,
+                'predio_id' => $predio_id,
             ]);
 
             return ResponseService::default(['type' => 'update', 'route' => 'documento.espaco_disponivel']);

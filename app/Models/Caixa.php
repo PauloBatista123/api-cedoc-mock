@@ -12,7 +12,7 @@ class Caixa extends Model
     protected $table = 'caixas';
 
     protected $fillable = [
-        'status', 'numero', 'espaco_total', 'espaco_ocupado', 'espaco_disponivel', 'unidade_id', 'endereco_id'
+        'status', 'numero', 'espaco_total', 'espaco_ocupado', 'espaco_disponivel', 'predio_id', 'andar_id'
     ];
 
     public function predio()

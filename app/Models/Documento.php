@@ -16,6 +16,8 @@ class Documento extends Model
         'caixa_id',
         'espaco_ocupado',
         'status',
+        'predio_id',
+        'observacao'
     ];
 
     public function caixa()
