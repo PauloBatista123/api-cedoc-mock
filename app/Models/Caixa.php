@@ -11,6 +11,8 @@ class Caixa extends Model
 
     protected $table = 'caixas';
 
+    protected $withCount = ['documentos'];
+
     protected $fillable = [
         'status', 'numero', 'espaco_total', 'espaco_ocupado', 'espaco_disponivel', 'predio_id', 'andar_id'
     ];

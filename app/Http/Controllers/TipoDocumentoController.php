@@ -36,11 +36,10 @@ class TipoDocumentoController extends Controller
                 $query->orderBy($request->get('ordem'));
             }, function ($query) {
                 $query->orderBy('id');
-            })->when($request->get('page'), function ($query) use ($request) {
-                if ($request->get('page') < 0) {
-                    return $query->get();
-                }
-                return $query->paginate(10);
+            })->when($request->get('page'), function ($query) {
+                return $query->paginate(12);
+            }, function($query){
+                return $query->get();
             });
 
 

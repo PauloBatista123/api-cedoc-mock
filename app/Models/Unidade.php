@@ -12,6 +12,8 @@ class Unidade extends Model
 
     protected $table = 'predios';
 
+    protected $withCount = ['caixas', 'documentos'];
+
     protected $fillable = [
         'numero',
         'status',
@@ -21,6 +23,16 @@ class Unidade extends Model
     public function andares()
     {
         return $this->hasMany(Andar::class, 'predio_id', 'id');
+    }
+
+    public function caixas()
+    {
+        return $this->hasMany(Caixa::class, 'predio_id', 'id');
+    }
+
+    public function documentos()
+    {
+        return $this->hasMany(Documento::class, 'predio_id', 'id');
     }
 
     public static function localizacaoAndar($numero_caixas)

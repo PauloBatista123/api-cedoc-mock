@@ -30,5 +30,10 @@ class Documento extends Model
         return $this->belongsTo(TipoDocumento::class, 'tipo_documento_id', 'id');
     }
 
+    public function predio()
+    {
+        return $this->belongsTo(Unidade::class, 'predio_id', 'id');
+    }
+
 
 }

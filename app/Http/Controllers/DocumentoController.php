@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\Documento\DocumentoCollectionResource;
+use App\Http\Resources\Documento\DocumentoResource;
 use App\Models\Caixa;
 use App\Models\Documento;
 use App\Models\HistoricoArquivo;
@@ -32,24 +33,27 @@ class DocumentoController extends Controller
 
             $query = $this->documento->with(['tipoDocumento', 'caixa.predio'])
             ->when($request->get('descricao'), function ($query) use ($request) {
-                $query->where('descricao', 'like', '%' . $request->get('descricao') . '%');
+                return $query->where('descricao', 'like', '%' . $request->get('descricao') . '%');
             })
-            ->when($request->get('ordem'), function ($query) use ($request) {
-                $query->orderBy($request->get('ordem'));
-            }, function ($query) {
-                $query->orderBy('id');
-            })->when($request->get('status'), function ($query) use ($request) {
-                $query->where('status', '=', $request->get('status'));
+            ->when($request->get('status'), function ($query) use ($request) {
+                return $query->where('status', '=', $request->get('status'));
             }, function ($query){
-                $query->where('status', 'aguardando');
+                return $query->where('status', 'aguardando');
+            })->when($request->get('predio_id'), function ($query) use ($request) {
+                return $query->where('predio_id', '=', $request->get('predio_id'));
+            })->when($request->get('tipo_documento_id'), function ($query) use ($request) {
+                return $query->where('tipo_documento_id', '=', $request->get('tipo_documento_id'));
+            })->when($request->get('ordenar_campo'), function ($query) use ($request) {
+                return $query->orderBy(
+                    $request->get('ordenar_campo'),
+                    $request->get('ordenar_direcao') ?? 'asc'
+                );
             })
-            ->when($request->get('page'), function ($query) use ($request) {
-                if ($request->get('page') < 0) {
-                    return $query->get();
-                }
-                return $query->paginate(10);
+            ->when($request->get('page'), function ($query) {
+                return $query->paginate(12);
+            }, function($query){
+                return $query->get();
             });
-
 
             return new DocumentoCollectionResource($query);
 
@@ -92,12 +96,26 @@ class DocumentoController extends Controller
 
             //caixas que possuem espaço disponivel para ser armazenado
             $caixas = Caixa::
-            with(['predio', 'documentos'])
+            with(['predio','documentos'])
             ->espacoDisponivel($espaco_ocupado)
+            ->when($request->get('predio_id'), function ($query) use ($request) {
+                $query->where('predio_id', $request->get('predio_id'));
+            })
             ->whereNot('id', $ultima_caixa->id)
             ->orderBy('id', 'desc')
             ->paginate(6);
 
+            $predios_disponiveis = DB::select(
+                'SELECT
+                    predios.id as predio_id
+                FROM predios
+
+                JOIN caixas on caixas.predio_id = predios.id
+
+                WHERE caixas.espaco_disponivel > 0
+
+                GROUP BY predio_id'
+            );
 
             //validação do proximo endereço
             $proximo_endereco = (object) array('caixa_id' => '', 'predio_id' => '', 'andar_id' => '');
@@ -126,6 +144,7 @@ class DocumentoController extends Controller
                 'predio' => $espaco_predio,
                 'caixas' => $caixas,
                 'espaco_ocupado' => $espaco_ocupado,
+                'predios_disponiveis' => $predios_disponiveis,
             ]);
 
         } catch (\Throwable|Exception $e) {
@@ -216,7 +235,17 @@ class DocumentoController extends Controller
      */
     public function show($id)
     {
-        //
+        try {
+
+            $documento = $this->documento
+                        ->with(['tipoDocumento', 'caixa.predio' , 'caixa'])
+                        ->find($id);
+
+            return new DocumentoResource($documento, ['type' => 'detalhes', 'route' => 'documento.detalhes', 'id' => $id]);
+
+        } catch (\Throwable|Exception $e) {
+            return ResponseService::exception('documento.detalhes', $id, $e);
+        }
     }
 
     /**

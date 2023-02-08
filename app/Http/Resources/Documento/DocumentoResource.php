@@ -33,9 +33,14 @@ class DocumentoResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'tipoDocumento' => $this->tipoDocumento,
             'status' => $this->status,
             'caixa' => $this->caixa,
+            'predio' => $this->predio,
+            'espaco_ocupado' => $this->espaco_ocupado,
+            'tipo_documento' => $this->tipoDocumento,
+            'documento' => $this->documento,
+            'documentos_count' => $this->whenCounted('caixa.documentos'),
+            'observacao' => $this->observacao,
             'created_at' => Carbon::parse($this->created_at)->format('d/m/Y H:i:s'),
             'updated_at' => Carbon::parse($this->updated_at)->format('d/m/Y H:i:s'),
         ];
