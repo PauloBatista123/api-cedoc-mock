@@ -38,7 +38,7 @@ class DocumentoController extends Controller
             ->when($request->get('status'), function ($query) use ($request) {
                 return $query->where('status', '=', $request->get('status'));
             }, function ($query){
-                return $query->where('status', 'aguardando');
+                return $query->where('status', 'alocar');
             })->when($request->get('predio_id'), function ($query) use ($request) {
                 return $query->where('predio_id', '=', $request->get('predio_id'));
             })->when($request->get('tipo_documento_id'), function ($query) use ($request) {
@@ -167,6 +167,7 @@ class DocumentoController extends Controller
             DB::beginTransaction();
 
             $numero_documento = $request->get('numero');
+            $observacao = $request->get('observacao');
             $espaco_ocupado = floatval($request->get('espaco_ocupado'));
             $numero_caixa = $request->get('numero_caixa');
             $andar_id = (int) $request->get('andar_id');
@@ -210,6 +211,7 @@ class DocumentoController extends Controller
                 'status' => 'arquivado',
                 'caixa_id' => $caixa->id,
                 'predio_id' => $predio_id,
+                'observacao' => $observacao
             ]);
 
             return ResponseService::default(['type' => 'update', 'route' => 'documento.espaco_disponivel']);

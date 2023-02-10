@@ -17,8 +17,15 @@ class Documento extends Model
         'espaco_ocupado',
         'status',
         'predio_id',
-        'observacao'
+        'observacao',
+        'nome_cooperado',
+        'cpf_cooperado',
+        'valor_operacao',
+        'data_liquidacao',
+        'data_expurgo',
     ];
+
+    protected $with = ['tipoDocumento'];
 
     public function caixa()
     {

@@ -34,15 +34,21 @@ class DocumentoResource extends JsonResource
         return [
             'id' => $this->id,
             'status' => $this->status,
-            'caixa' => $this->caixa,
-            'predio' => $this->predio,
             'espaco_ocupado' => $this->espaco_ocupado,
-            'tipo_documento' => $this->tipoDocumento,
             'documento' => $this->documento,
             'documentos_count' => $this->whenCounted('caixa.documentos'),
             'observacao' => $this->observacao,
+            'nome_cooperado' => $this->nome_cooperado,
+            'cpf_cooperado' => $this->cpf_cooperado,
+            'valor_operacao' => $this->valor_operacao,
+            'vencimento_operacao' => Carbon::parse($this->vencimento_operacao)->format('d/m/Y'),
+            'data_liquidacao' => Carbon::parse($this->data_liquidacao)->format('d/m/Y'),
+            'data_expurgo' => Carbon::parse($this->data_expurgo)->format('d/m/Y'),
             'created_at' => Carbon::parse($this->created_at)->format('d/m/Y H:i:s'),
             'updated_at' => Carbon::parse($this->updated_at)->format('d/m/Y H:i:s'),
+            'tipo_documento' => $this->tipoDocumento,
+            'caixa' => $this->caixa,
+            'predio' => $this->predio,
         ];
     }
 
