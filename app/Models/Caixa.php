@@ -36,7 +36,6 @@ class Caixa extends Model
      */
 
      public function scopeEspacoDisponivel($query, $espaco){
-        return $query->where([['status', '=' ,'disponivel'], ['espaco_disponivel', '>=', $espaco]]);
+        return $query->where([['caixas.status', '=' ,'disponivel'], ['caixas.espaco_disponivel', '>=', $espaco]]);
      }
-
 }

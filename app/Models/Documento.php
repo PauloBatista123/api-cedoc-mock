@@ -12,17 +12,20 @@ class Documento extends Model
     protected $table = 'documentos';
 
     protected $fillable = [
+        'documento',
+        'observacao',
         'tipo_documento_id',
         'caixa_id',
+        'predio_id',
         'espaco_ocupado',
         'status',
-        'predio_id',
-        'observacao',
         'nome_cooperado',
         'cpf_cooperado',
         'valor_operacao',
+        'vencimento_operacao',
         'data_liquidacao',
         'data_expurgo',
+        'ordem'
     ];
 
     protected $with = ['tipoDocumento'];
@@ -41,6 +44,28 @@ class Documento extends Model
     {
         return $this->belongsTo(Unidade::class, 'predio_id', 'id');
     }
+
+     /**
+     * Scope a query to only include users of a given type.
+     *
+     * @param  mixed  $caixa_id
+     * @return integer
+     */
+
+     public function scopeOrdem($query, $caixa_id){
+        try {
+            $ultima_ordem = $query->where('caixa_id', $caixa_id)->orderBy('id', 'desc')->first()->ordem;
+
+            if($ultima_ordem > 0){
+                return $ultima_ordem + 1;
+            }else{
+                return 1;
+            }
+        } catch (\Throwable $th) {
+            return 1;
+        }
+
+     }
 
 
 }
