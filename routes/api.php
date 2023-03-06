@@ -52,6 +52,11 @@ Route::get('/documento/{id}', [DocumentoController::class, 'show'])->name('docum
 Route::put('/documento/{id}', [DocumentoController::class, 'update'])->name('documento.update');
 Route::delete('/documento/{id}', [DocumentoController::class, 'destroy'])->name('documento.destroy');
 Route::post('/documento', [DocumentoController::class, 'store'])->name('documento.store');
+Route::post('/documento/importar', [DocumentoController::class, 'importar'])->name('documento.importar');
+Route::post('/documento/importar/novos', [DocumentoController::class, 'importar_novos'])->name('documento.importar_novos');
+Route::get('/documento/importar/progress', [DocumentoController::class, 'progress_batch'])->name('documento.importar.progress');
+Route::get('/documento/importar/progress/{id}', [DocumentoController::class, 'buscar_progress_batch'])->name('documento.importar.progress.buscar');
+Route::get('/documento/importar/now/{id}', [DocumentoController::class, 'buscar_progress_now'])->name('documento.importar.progress.now');
 
 // routes caixas
 Route::get('/caixa', [CaixaController::class, 'index'])->name('caixa.show');

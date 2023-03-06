@@ -15,7 +15,7 @@ return new class extends Migration
     public function up()
     {
         Schema::table('documentos', function (Blueprint $table) {
-            DB::statement("ALTER TABLE `documentos` MODIFY column `status` ENUM('alocar', 'arquivado', 'retirar', 'emprestado') DEFAULT 'alocar'");
+            DB::statement("ALTER TABLE `documentos` MODIFY column `status` ENUM('alocar', 'arquivado', 'retirar', 'emprestado', 'liquidado') DEFAULT 'alocar'");
         });
     }
 
