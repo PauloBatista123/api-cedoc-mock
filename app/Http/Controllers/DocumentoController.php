@@ -93,10 +93,18 @@ class DocumentoController extends Controller
     {
         try{
             $espaco_ocupado = $request->get('espaco_ocupado');
+            $tipo_documento_id = $request->get('tipo_documento_id');
+            $cpf_cooperado = $request->get('cpf_cooperado');
             $numero = $request->get('numero');
 
             //pegar informações do documento a ser endereçado
-            $documento = $this->documento->where('documento', $numero)->first();
+            $documento = $this->documento
+                            ->where([
+                                ['documento', '=', $numero],
+                                ['tipo_documento_id', '=', $tipo_documento_id],
+                                ['cpf_cooperado', '=', $cpf_cooperado]
+                            ])
+                            ->first();
 
             if(!$documento){
                 throw new \Error('O documento informado não foi localizado', 404);
