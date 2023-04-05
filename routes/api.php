@@ -5,6 +5,7 @@ use App\Http\Controllers\DocumentoController;
 use App\Http\Controllers\EnderecoController;
 use App\Http\Controllers\TipoDocumentoController;
 use App\Http\Controllers\UnidadeController;
+use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -19,9 +20,8 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
+
+Route::middleware('auth:sanctum')->group(function () {
 
 // routes unidades
 Route::get('/unidade', [UnidadeController::class, 'index'])->name('unidade.show');
@@ -64,4 +64,10 @@ Route::get('/caixa/{id}', [CaixaController::class, 'show'])->name('caixa.detalhe
 Route::put('/caixa/{id}', [CaixaController::class, 'update'])->name('caixa.update');
 Route::delete('/caixa/{id}', [CaixaController::class, 'destroy'])->name('caixa.destroy');
 Route::post('/caixa', [CaixaController::class, 'store'])->name('caixa.store');
+
+});
+
+// rotas de login e tokens
+Route::post('/login', [UserController::class, 'login'])->name('login');
+Route::post('/register', [UserController::class, 'register'])->name('register');
 
