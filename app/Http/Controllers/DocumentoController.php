@@ -8,16 +8,12 @@ use App\Http\Resources\Documento\DocumentoCollectionResource;
 use App\Http\Resources\Documento\DocumentoResource;
 use App\Http\Resources\ImportacaoCollectionResource;
 use App\Http\Resources\ImportacaoResource;
-use App\Imports\DocumentosImport;
 use App\Imports\NewDocumentosImport;
 use App\Jobs\ProcessImportDossie;
-use App\Jobs\ProcessImportNewDossie;
 use App\Models\Caixa;
 use App\Models\Documento;
-use App\Models\HistoricoArquivo;
 use App\Models\JobStatus;
 use App\Models\Unidade;
-use App\Models\User;
 use App\Services\ResponseService;
 use Carbon\Carbon;
 use Exception;
@@ -25,11 +21,7 @@ use Illuminate\Foundation\Bus\DispatchesJobs;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Storage;
-use Maatwebsite\Excel\Facades\Excel;
 use Maatwebsite\Excel\HeadingRowImport;
-use Illuminate\Support\Facades\Queue;
 
 class DocumentoController extends Controller
 {
@@ -63,16 +55,21 @@ class DocumentoController extends Controller
                 $query->where('predio_id', '=', $request->get('predio_id'));
             })->when($request->get('tipo_documento_id'), function ($query) use ($request) {
                 return $query->where('tipo_documento_id', '=', $request->get('tipo_documento_id'));
+            })->when($request->get('caixa_id'), function ($query) use ($request) {
+                return $query->where('caixa_id', '=', $request->get('caixa_id'));
             })->when($request->get('ordenar_campo'), function ($query) use ($request) {
                 return $query->orderBy(
                     $request->get('ordenar_campo'),
                     $request->get('ordenar_direcao') ?? 'asc'
                 );
+            }, function ($query) use ($request) {
+                return $query->orderBy('ordem');
             })
-            ->when($request->get('page'), function ($query) {
-                return $query->paginate(12);
-            }, function($query){
-                return $query->get();
+            ->when($request->get('page'), function ($query) use($request){
+                if($request->get('page') < 0){
+                    return $query->get();
+                }
+                return $query->paginate(10);
             });
 
             return new DocumentoCollectionResource($query);
@@ -117,7 +114,19 @@ class DocumentoController extends Controller
             ->first();
 
             //total de caixas por predio - considerando ultima caixa recomendada pelo sistema
-            $espaco_predio = DB::select('CALL P_ESPACO_DISPONIVEL(:predio_id)', [
+            $espaco_predio = DB::select(
+            'SELECT
+
+            COUNT(c.id) as total_caixas, SUM(c.espaco_disponivel) as espaco_disponivel_total, p.id as predio_id
+
+            from predios p
+
+            join caixas c on c.predio_id = p.id
+
+            where p.id = :predio_id
+
+            order by c.id desc',
+            [
                 ':predio_id' => $ultima_caixa->predio_id
             ])[0];
 

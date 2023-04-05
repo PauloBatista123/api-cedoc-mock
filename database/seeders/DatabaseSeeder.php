@@ -18,7 +18,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
-        for($i = 6; $i <= 57; $i++) {
+        for($i = 3; $i <= 57; $i++) {
             DB::table('caixas')->insert([
                 'numero' => $i,
                 'status' => 'disponivel',

@@ -25,13 +25,39 @@ class CaixaController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
         try {
+            $query = $this->caixa->with(['predio'])
+            ->when($request->get('numero'), function ($query) use ($request) {
+                return $query->where('numero', '=', $request->get('numero'));
+            })
+            ->when($request->get('caixa_id'), function ($query) use ($request) {
+                return $query->where('id', '=', $request->get('caixa_id'));
+            })
+            ->when($request->get('status'), function ($query) use ($request) {
+                return $query->where('status', '=', $request->get('status'));
+            }, function ($query){
+                return $query->where('status', 'disponivel');
+            })->when($request->get('predio_id'), function ($query) use ($request) {
+                $query->where('predio_id', '=', $request->get('predio_id'));
+            })->when($request->get('andar_id'), function ($query) use ($request) {
+                return $query->where('andar_id', '=', $request->get('andar_id'));
+            })->when($request->get('ordenar_campo'), function ($query) use ($request) {
+                return $query->orderBy(
+                    $request->get('ordenar_campo'),
+                    $request->get('ordenar_direcao') ?? 'desc'
+                );
+            }, function($query){
+                return $query->orderBy('id', 'desc');
+            })
+            ->when($request->get('page'), function ($query) {
+                return $query->paginate(21);
+            }, function($query){
+                return $query->get();
+            });
 
-            $caixas = $this->caixa->with(['unidade', 'endereco'])->orderBy('numero')->get();
-
-            return new CaixaCollectionResource($caixas);
+            return new CaixaCollectionResource($query);
 
         } catch (\Throwable|Exception $e) {
 
@@ -83,7 +109,7 @@ class CaixaController extends Controller
                 throw new Exception('Informe o id do registro.');
             }
 
-            $caixa = $this->caixa->find($id);
+            $caixa = Caixa::with('predio')->find($id);
 
             if(!$caixa){
                 throw new Exception('Nenhum registro encontrado.');

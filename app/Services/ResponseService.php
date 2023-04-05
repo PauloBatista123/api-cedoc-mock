@@ -23,7 +23,13 @@ Class ResponseService{
                     'url'    => route($route)
                 ];
                 break;
-
+            case 'search':
+                return [
+                    'status' => true,
+                    'msg'    => 'Busca finalizada com sucesso',
+                    'url'    => route($route)
+                ];
+                break;
             case 'show':
                 return [
                     'status' => true,

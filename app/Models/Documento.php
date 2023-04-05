@@ -54,7 +54,7 @@ class Documento extends Model
 
      public function scopeOrdem($query, $caixa_id){
         try {
-            $ultima_ordem = $query->where('caixa_id', $caixa_id)->orderBy('id', 'desc')->first()->ordem;
+            $ultima_ordem = $query->where('caixa_id', $caixa_id)->orderBy('ordem', 'desc')->first()->ordem;
 
             if($ultima_ordem > 0){
                 return $ultima_ordem + 1;

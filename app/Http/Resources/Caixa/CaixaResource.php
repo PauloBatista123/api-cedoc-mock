@@ -39,6 +39,9 @@ class CaixaResource extends JsonResource
             'espaco_ocupado' => $this->espaco_ocupado,
             'unidade' => $this->unidade,
             'endereco' => $this->endereco,
+            'documentos_count' => $this->documentos_count,
+            'andar_id' => $this->andar_id,
+            'predio' => $this->predio,
             'created_at' => Carbon::parse($this->created_at)->format('d/m/Y H:i:s'),
             'updated_at' => Carbon::parse($this->updated_at)->format('d/m/Y H:i:s'),
         ];
