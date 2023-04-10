@@ -3,6 +3,7 @@
 namespace App\Imports;
 
 use App\Models\Documento;
+use App\Services\RastreabilidadeService;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Database\Eloquent\Builder;
@@ -10,6 +11,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Imtigger\LaravelJobStatus\Trackable;
@@ -86,6 +88,13 @@ class NewDocumentosImport implements ToCollection, WithHeadingRow, ShouldQueue, 
                     'vencimento_operacao' => $row['vencimento'] !== "00/01/1900" ? Carbon::createFromFormat('d/m/Y', $row['vencimento']) : null,
                     'valor_operacao' => $row['vlr_operacao'] ?? null,
                 ],
+            );
+
+            RastreabilidadeService::create(
+                'cadastrar',
+                $documento->id,
+                Auth()->user()->id,
+                'Registro cadastrado via importação de arquivo'
             );
 
             //array para setar no output do job

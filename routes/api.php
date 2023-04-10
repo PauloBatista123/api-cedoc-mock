@@ -65,6 +65,8 @@ Route::put('/caixa/{id}', [CaixaController::class, 'update'])->name('caixa.updat
 Route::delete('/caixa/{id}', [CaixaController::class, 'destroy'])->name('caixa.destroy');
 Route::post('/caixa', [CaixaController::class, 'store'])->name('caixa.store');
 
+Route::post('/logout', [UserController::class, 'logout'])->name('logout');
+
 });
 
 // rotas de login e tokens

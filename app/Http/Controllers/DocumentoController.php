@@ -263,6 +263,13 @@ class DocumentoController extends Controller
                 'ordem' => $ordem
             ]);
 
+            RastreabilidadeService::create(
+                'arquivar',
+                $documento->id,
+                Auth()->user()->id,
+                'Registro manual de arquivamento'
+            );
+
             return ResponseService::default(['type' => 'update', 'route' => 'documento.espaco_disponivel']);
 
             //comit de trsanações
