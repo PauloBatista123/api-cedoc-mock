@@ -25,10 +25,9 @@ class Documento extends Model
         'vencimento_operacao',
         'data_liquidacao',
         'data_expurgo',
-        'ordem'
+        'ordem',
+        'user_id'
     ];
-
-    protected $with = ['tipoDocumento'];
 
     public function caixa()
     {
@@ -43,6 +42,16 @@ class Documento extends Model
     public function predio()
     {
         return $this->belongsTo(Unidade::class, 'predio_id', 'id');
+    }
+
+    public function usuario()
+    {
+        return $this->belongsTo(User::class, 'user_id', 'id');
+    }
+
+    public function rastreabilidades()
+    {
+        return $this->hasMany(Rastreabilidade::class, 'documento_id', 'id');
     }
 
      /**

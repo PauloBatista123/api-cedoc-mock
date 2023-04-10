@@ -14,6 +14,7 @@ use App\Models\Caixa;
 use App\Models\Documento;
 use App\Models\JobStatus;
 use App\Models\Unidade;
+use App\Services\RastreabilidadeService;
 use App\Services\ResponseService;
 use Carbon\Carbon;
 use Exception;
@@ -43,7 +44,7 @@ class DocumentoController extends Controller
     {
         try {
 
-            $query = $this->documento->with(['tipoDocumento', 'caixa.predio'])
+            $query = $this->documento->with(['tipoDocumento', 'caixa.predio', 'usuario'])
             ->when($request->get('documento'), function ($query) use ($request) {
                 return $query->where('documento', '=', $request->get('documento'));
             })
@@ -288,7 +289,7 @@ class DocumentoController extends Controller
         try {
 
             $documento = $this->documento
-                        ->with(['tipoDocumento', 'caixa.predio' , 'caixa'])
+                        ->with(['tipoDocumento', 'caixa.predio' , 'caixa', 'rastreabilidades'])
                         ->find($id);
 
             return new DocumentoResource($documento, ['type' => 'detalhes', 'route' => 'documento.detalhes', 'id' => $id]);
@@ -316,7 +317,15 @@ class DocumentoController extends Controller
                 'cpf_cooperado' => $request->get('cpf'),
                 'vencimento_operacao' => Carbon::parse($request->get('vencimento')) ?? null,
                 'valor_operacao' => $request->get('valor') ?? null,
+                'user_id' => $request->get('user_id'),
             ]);
+
+            RastreabilidadeService::create(
+                'cadastrar',
+                $documento->id,
+                $request->get('user_id'),
+                'Cadastro manual do dossiê'
+            );
 
             return new DocumentoResource($documento, ['type' => 'store', 'route' => 'documento.store']);
 

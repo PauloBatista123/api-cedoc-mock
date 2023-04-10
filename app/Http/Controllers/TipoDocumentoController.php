@@ -28,7 +28,7 @@ class TipoDocumentoController extends Controller
     {
         try {
 
-            $query = $this->tipoDocumento
+            $query = $this->tipoDocumento->with('usuario')
             ->when($request->get('descricao'), function ($query) use ($request) {
                 $query->where('descricao', 'like', '%' . $request->get('descricao') . '%');
             })
@@ -65,6 +65,7 @@ class TipoDocumentoController extends Controller
             $tipoDocumento = $this->tipoDocumento->create([
                 'descricao' => $request->descricao,
                 'temporalidade' => $request->temporalidade,
+                'user_id' => $request->user_id
             ]);
 
             return new TipoDocumentoResource($tipoDocumento, ['route' => 'tipo-documento.store', 'type' => 'store']);
@@ -123,6 +124,7 @@ class TipoDocumentoController extends Controller
             $tipoDocumento->update([
                 'descricao' => $request->descricao,
                 'temporalidade' => $request->temporalidade,
+                'user_id' => $request->user_id,
             ]);
 
             return new TipoDocumentoResource($tipoDocumento, ['route' => 'tipo-documento.update', 'type' => 'update']);

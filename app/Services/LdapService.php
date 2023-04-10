@@ -2,6 +2,7 @@
 namespace App\Services;
 
 use Exception;
+use LdapRecord\Support\Arr;
 
 Class LdapService{
 
@@ -26,10 +27,15 @@ Class LdapService{
         $connection->connect();
 
         $result = $connection->query()->where('samaccountname', '=', $user)->firstOrFail();
+
+        $nameExplode = explode(' ', $result['name'][0]);
+        $firtsName = Arr::first($nameExplode);
+        $lastName = Arr::last($nameExplode);
+
         // return ;
         if($connection->auth()->attempt($result['distinguishedname'][0], $password)){
             return [
-                'user' => $result['givenname'][0].' '.$result['sn'][0],
+                'user' => $firtsName.' '.$lastName,
                 'connect' => true,
             ];
         }else{

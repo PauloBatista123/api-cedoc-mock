@@ -42,6 +42,8 @@ class DocumentoResource extends JsonResource
             'nome_cooperado' => $this->nome_cooperado,
             'cpf_cooperado' => $this->cpf_cooperado,
             'valor_operacao' => $this->valor_operacao,
+            'usuario' => $this->usuario,
+            'rastreabilidades' => $this->rastreabilidades,
             'vencimento_operacao' => $this->vencimento_operacao ? Carbon::parse($this->vencimento_operacao)->format('d/m/Y') : null,
             'data_liquidacao' => Carbon::parse($this->data_liquidacao)->format('d/m/Y'),
             'data_expurgo' => Carbon::parse($this->data_expurgo)->format('d/m/Y'),

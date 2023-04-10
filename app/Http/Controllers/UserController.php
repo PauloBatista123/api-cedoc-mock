@@ -29,6 +29,7 @@ class UserController extends Controller
 
             $result = LdapService::connect($request->get('email'), $request->get('password'));
 
+
             if(!$result){
                 return response()->json([
                     'error' => true,

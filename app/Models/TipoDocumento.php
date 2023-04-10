@@ -12,6 +12,11 @@ class TipoDocumento extends Model
     protected $table = 'tipo_documentos';
 
     protected $fillable = [
-        'descricao', 'temporalidade'
+        'descricao', 'temporalidade', 'user_id'
     ];
+
+    public function usuario()
+    {
+        return $this->belongsTo(User::class, 'user_id', 'id');
+    }
 }
