@@ -97,6 +97,7 @@ class DocumentoController extends Controller
 
             //pegar informações do documento a ser endereçado
             $documento = $this->documento
+                            ->with(['tipoDocumento', 'usuario', 'predio'])
                             ->where([
                                 ['documento', '=', $numero],
                                 ['tipo_documento_id', '=', $tipo_documento_id],
@@ -147,7 +148,7 @@ class DocumentoController extends Controller
                     ->whereNot('caixas.id', $ultima_caixa->id)
                     ->groupBy('caixas.id')
                     ->orderBy('caixas.id', 'desc')
-                    ->paginate(6);
+                    ->paginate(8);
 
             $predios_disponiveis = DB::select(
                 'SELECT
