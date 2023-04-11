@@ -405,7 +405,7 @@ class DocumentoController extends Controller
                 throw new Exception("Não encontramos as colunas:".implode(",", $diff));
             }
 
-            (new NewDocumentosImport)->import($request->file('arquivo'), 'public', \Maatwebsite\Excel\Excel::XLSX);
+            (new NewDocumentosImport($request->user()->id))->import($request->file('arquivo'), 'public', \Maatwebsite\Excel\Excel::XLSX);
 
             return response()->json([
                 'message' => 'Arquivo enviado com sucesso',

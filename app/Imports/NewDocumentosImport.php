@@ -30,11 +30,13 @@ class NewDocumentosImport implements ToCollection, WithHeadingRow, ShouldQueue, 
     use Importable, InteractsWithQueue, Queueable, SerializesModels, Trackable;
 
     public $log = [];
+    protected $user;
 
-    public function __construct()
+    public function __construct($user)
     {
         $this->prepareStatus();
         $this->setInput(['status' => 'progress']);
+        $this->user = $user;
     }
 
 
@@ -93,8 +95,8 @@ class NewDocumentosImport implements ToCollection, WithHeadingRow, ShouldQueue, 
             RastreabilidadeService::create(
                 'cadastrar',
                 $documento->id,
-                Auth()->user()->id,
-                'Registro cadastrado via importação de arquivo'
+                $this->user,
+                'Registro cadastrado/atualizado via importação de arquivo'
             );
 
             //array para setar no output do job
