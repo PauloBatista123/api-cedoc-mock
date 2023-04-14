@@ -69,7 +69,7 @@ return [
     |
     */
 
-    'timezone' => 'America/Bahia',
+    'timezone' => 'America/Sao_Paulo',
 
     /*
     |--------------------------------------------------------------------------
@@ -182,6 +182,7 @@ return [
         Illuminate\Validation\ValidationServiceProvider::class,
         Illuminate\View\ViewServiceProvider::class,
 
+        PragmaRX\Google2FALaravel\ServiceProvider::class,
         Maatwebsite\Excel\ExcelServiceProvider::class,
         Imtigger\LaravelJobStatus\LaravelJobStatusServiceProvider::class,
         /*
@@ -212,7 +213,7 @@ return [
 
     'aliases' => Facade::defaultAliases()->merge([
         // 'ExampleClass' => App\Example\ExampleClass::class,
-
+        'Google2FA' => PragmaRX\Google2FALaravel\Facade::class,
         'Excel' => Maatwebsite\Excel\Facades\Excel::class,
 
     ])->toArray(),

@@ -7,7 +7,10 @@ use App\Services\LdapService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
+use Google2FA;
+use PragmaRX\Google2FALaravel\Support\Authenticator;
 
 class UserController extends Controller
 {
@@ -29,7 +32,6 @@ class UserController extends Controller
 
             $result = LdapService::connect($request->get('email'), $request->get('password'));
 
-
             if(!$result){
                 return response()->json([
                     'error' => true,
@@ -43,6 +45,10 @@ class UserController extends Controller
                 'name' => $result['user'],
             ]);
 
+            Auth::login($user);
+
+            $loginSecurity = $user->loginSecurity()->exists() ? $user->loginSecurity->google2fa_enable : false;
+
             return response()->json([
                 'error' => false,
                 'message' => 'Usuário autenticado com sucesso',
@@ -50,6 +56,7 @@ class UserController extends Controller
                     'name' => $user->name,
                     'email' => $user->email,
                     'id' => $user->id,
+                    'doisFatores' => boolval($loginSecurity)
                 ],
                 'token' => $user->createToken($user->name, ['server:create', 'server:update'])->plainTextToken
             ], 200);
@@ -94,7 +101,9 @@ class UserController extends Controller
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        Auth::user()->tokens()->delete();
+        Google2FA::logout();
+        Session::flush();
 
         return response()->json([
             'error' => false,
