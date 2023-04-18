@@ -8,6 +8,8 @@ use App\Http\Resources\Documento\DocumentoCollectionResource;
 use App\Http\Resources\Documento\DocumentoResource;
 use App\Http\Resources\ImportacaoCollectionResource;
 use App\Http\Resources\ImportacaoResource;
+use App\Http\Services\CaixaService;
+use App\Http\Services\DocumentoService;
 use App\Imports\NewDocumentosImport;
 use App\Jobs\ProcessImportDossie;
 use App\Models\Caixa;
@@ -31,7 +33,11 @@ class DocumentoController extends Controller
     private $documento;
     const API_COOPERADO = 'http://10.54.56.236:3000/cooperado/';
 
-    public function __construct(Documento $documento)
+    public function __construct(
+        Documento $documento,
+        protected CaixaService $caixaService,
+        protected DocumentoService $documentoService
+    )
     {
         $this->documento = $documento;
     }
@@ -94,99 +100,36 @@ class DocumentoController extends Controller
             $tipo_documento_id = $request->get('tipo_documento_id');
             $cpf_cooperado = $request->get('cpf_cooperado');
             $numero = $request->get('numero');
+            $page = $request->get('page');
+            $predio_id = $request->get('predio_id');
 
             //pegar informações do documento a ser endereçado
-            $documento = $this->documento
-                            ->with(['tipoDocumento', 'usuario', 'predio'])
-                            ->where([
-                                ['documento', '=', $numero],
-                                ['tipo_documento_id', '=', $tipo_documento_id],
-                                ['cpf_cooperado', '=', $cpf_cooperado]
-                            ])
-                            ->first();
+            $documentos = $this->documentoService->getDocumento($tipo_documento_id, $cpf_cooperado, $numero, $page);
 
-            if(!$documento){
-                throw new \Error('O documento informado não foi localizado', 404);
-            }else if($documento->status === 'arquivado'){
-                throw new \Error('O documento já está endereçado', 404);
+            if(!$documentos){
+                throw new \Error('Não localizamos nenhum documento', 404);
             }
+
+
             //ultima caixa lançada no sistema por ordem de numero (número é unico e ordem descrescente)
-            $ultima_caixa = Caixa::
-            orderByDesc('caixas.id')
-            ->first();
+            $ultima_caixa = $this->caixaService->ultimaCaixa();
 
-            //total de caixas por predio - considerando ultima caixa recomendada pelo sistema
-            $espaco_predio = DB::select(
-            'SELECT
-
-            COUNT(c.id) as total_caixas, SUM(c.espaco_disponivel) as espaco_disponivel_total, p.id as predio_id
-
-            from predios p
-
-            join caixas c on c.predio_id = p.id
-
-            where p.id = :predio_id
-
-            order by c.id desc',
-            [
-                ':predio_id' => $ultima_caixa->predio_id
-            ])[0];
-
-
-            //caixas que possuem espaço disponivel para ser armazenado
-
-            $caixas = Caixa::
-                    with(['predio','documentos'])
-                    ->leftjoin('documentos', function ($join) {
-                        $join->on('documentos.caixa_id', '=', 'caixas.id');
-                    })
-                    ->selectRaw('IF(ISNULL(MAX(documentos.ordem) + 1), "1", (MAX(documentos.ordem) + 1)) as proxima_ordem')
-                    ->espacoDisponivel($espaco_ocupado)
-                    ->when($request->get('predio_id'), function ($query) use ($request) {
-                        $query->where('caixas.predio_id', $request->get('predio_id'));
-                    })
-                    ->whereNot('caixas.id', $ultima_caixa->id)
-                    ->groupBy('caixas.id')
-                    ->orderBy('caixas.id', 'desc')
-                    ->paginate(8);
-
-            $predios_disponiveis = DB::select(
-                'SELECT
-                    predios.id as predio_id
-                FROM predios
-
-                JOIN caixas on caixas.predio_id = predios.id
-
-                WHERE caixas.espaco_disponivel > 0
-
-                GROUP BY predio_id'
+            $espaco_predio = $this->documentoService->espacoDisponivelPredio($ultima_caixa);
+            //pegar proximo endereço
+            $proximo_endereco = $this->documentoService->proximoEndereco(
+                $espaco_predio,
+                $ultima_caixa,
+                $espaco_ocupado
             );
 
-            //validação do proximo endereço
-            $proximo_endereco = (object) array('caixa_id' => '', 'predio_id' => '', 'andar_id' => '', 'ordem' => '');
+            //caixas que possuem espaço disponivel para ser armazenado
+            $caixas = $this->caixaService->espacoDisponivel($espaco_ocupado, $predio_id);
 
-            if($espaco_predio->espaco_disponivel_total == 0 || $espaco_predio->total_caixas === 63 && $ultima_caixa->espaco_disponivel < $espaco_ocupado){
-                //não existe espaço no predio e total de caixas já atingiu o máximo
-                $proximo_endereco->predio_id = $espaco_predio->predio_id + 1;
-                $proximo_endereco->caixa_id = $ultima_caixa->id + 1;
-                $proximo_endereco->andar_id = ++$ultima_caixa->andar_id > 9 ? 1 : $ultima_caixa->andar_id;
-                $proximo_endereco->ordem = Documento::ordem($ultima_caixa->id + 1);
-            }else if($espaco_predio->espaco_disponivel_total == 0 && $espaco_predio->total_caixas < 63 && $ultima_caixa->espaco_disponivel == 0 || $ultima_caixa->espaco_disponivel < $espaco_ocupado){
-                //não existe espaço no predio, não atingiu o total de caixas, no entanto, a ultimoa caixa não possui espaço
-                $proximo_endereco->predio_id = $espaco_predio->predio_id;
-                $proximo_endereco->caixa_id = $ultima_caixa->id + 1;
-                $proximo_endereco->andar_id = Unidade::localizacaoAndar(++$espaco_predio->total_caixas);
-                $proximo_endereco->ordem = Documento::ordem($ultima_caixa->id + 1);
-            }else{
-                //o prédio não atingiu o total de caixas e possui espaço na última caixa
-                $proximo_endereco->predio_id = $espaco_predio->predio_id;
-                $proximo_endereco->caixa_id = $ultima_caixa->id;
-                $proximo_endereco->andar_id = Unidade::localizacaoAndar($espaco_predio->total_caixas);
-                $proximo_endereco->ordem = Documento::ordem($ultima_caixa->id);
-            }
+            //pegar os ids dos predios que possuem espaço disponivel
+            $predios_disponiveis = $this->documentoService->prediosDisponiveis();
 
             return response()->json([
-                'documento' => $documento,
+                'documentos' => $documentos,
                 'proximo_endereco' => $proximo_endereco,
                 'ultima_caixa' => $ultima_caixa,
                 'predio' => $espaco_predio,
@@ -202,6 +145,44 @@ class DocumentoController extends Controller
         }
     }
 
+     /**
+     * Salvar endereço em um documento.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+
+     public function proximo_endereco(Request $request)
+     {
+
+        try{
+
+            $espaco_ocupado = $request->get('espaco_ocupado');
+
+            //ultima caixa lançada no sistema por ordem de numero (número é unico e ordem descrescente)
+            $ultima_caixa = $this->caixaService->ultimaCaixa();
+
+            $espaco_predio = $this->documentoService->espacoDisponivelPredio($ultima_caixa);
+
+            //pegar proximo endereço
+            $proximo_endereco = $this->documentoService->proximoEndereco(
+                $espaco_predio,
+                $ultima_caixa,
+                $espaco_ocupado
+            );
+
+            $proximo_endereco->espaco_ocupado_documento = $espaco_ocupado;
+
+            return response()->json([
+                'proximo_endereco' => $proximo_endereco
+            ], 200);
+
+        }catch(Exception $e){
+            return ResponseService::exception('documento.espaco_disponivel', null, $e);
+        }
+
+     }
+
     /**
      * Salvar endereço em um documento.
      *
@@ -215,6 +196,7 @@ class DocumentoController extends Controller
             DB::beginTransaction();
 
             $numero_documento = $request->get('numero');
+            $id = $request->get('id');
             $ordem = $request->get('ordem');
             $observacao = $request->get('observacao');
             $espaco_ocupado = floatval($request->get('espaco_ocupado'));
@@ -223,24 +205,25 @@ class DocumentoController extends Controller
             $predio_id = Unidade::getIdPredio($request->get('predio_id'));
 
             //pegar informações do documento a ser endereçado
-            $documento = $this->documento->where('documento', $numero_documento)->first();
+            $documento = $this->documento->find($id);
 
             if($documento->status === 'arquivado'){
                 throw new \Error('O documento já está endereçado', 404);
             }
 
             //verifica se a caixa existe / se não cria uma caixa nova
-            $caixa = Caixa::where('id', $numero_caixa)->first();
+            $caixa = Caixa::find($numero_caixa);
 
             if($caixa){
                 //alterar caixa
                 $caixa->update([
-                    'espaco_ocupado' => $espaco_ocupado + $caixa->espaco_ocupado,
-                    'espaco_disponivel' => $caixa->espaco_disponivel - $espaco_ocupado,
-                    'status' => ($caixa->espaco_disponivel - $espaco_ocupado) == 0 ? 'ocupado' : 'disponivel',
+                    'espaco_ocupado' => (int) $espaco_ocupado + (int) $caixa->espaco_ocupado,
+                    'espaco_disponivel' => (int) $caixa->espaco_disponivel - (int) $espaco_ocupado,
+                    'status' => ((int) $caixa->espaco_disponivel - (int) $espaco_ocupado) == 0 ? 'ocupado' : 'disponivel',
                     'predio_id' => $predio_id,
                     'andar_id' => $andar_id,
                 ]);
+
             }else{
                 //criar caixa
                 $caixa = Caixa::create(
@@ -506,6 +489,25 @@ class DocumentoController extends Controller
     public function destroy($id)
     {
         //
+    }
+
+    public function filtro(Request $request)
+    {
+        try {
+
+            $predio = $request->get('predio_id');
+            $andar = $request->get('andar_id');
+            $espaco_ocupado = $request->get('espaco_ocupado');
+
+            $caixas = $this->caixaService->espacoDisponivelManual($espaco_ocupado, $predio, $andar);
+
+             return response()->json([
+                'caixas' => $caixas
+             ]);
+
+        } catch (\Exception $e) {
+            return ResponseService::exception('documento.filtro', null, $e);
+        }
     }
 
 

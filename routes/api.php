@@ -50,7 +50,9 @@ Route::middleware('auth:sanctum')->group(function () {
         // routes documento
         Route::get('/documento', [DocumentoController::class, 'index'])->name('documento.show');
         Route::get('/documento/espaco-disponivel', [DocumentoController::class, 'buscar_enderecamento'])->name('documento.espaco_disponivel');
+        Route::get('/documento/proximo-endereco', [DocumentoController::class, 'proximo_endereco'])->name('documento.proximo_endereco');
         Route::post('/documento/enderecar', [DocumentoController::class, 'salvar_enderecamento'])->name('documento.salvar_enderecamento');
+        Route::get('/documento/enderecar/filtro', [DocumentoController::class, 'filtro'])->name('documento.filtro');
         Route::get('/documento/{id}', [DocumentoController::class, 'show'])->name('documento.detalhes');
         Route::put('/documento/{id}', [DocumentoController::class, 'update'])->name('documento.update');
         Route::delete('/documento/{id}', [DocumentoController::class, 'destroy'])->name('documento.destroy');
