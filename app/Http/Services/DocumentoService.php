@@ -4,13 +4,27 @@ namespace App\Http\Services;
 
 use App\Models\Documento;
 use App\Models\Unidade;
+use App\Models\Caixa;
+use App\Http\Services\CaixaService;
+use App\Services\RastreabilidadeService;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class DocumentoService {
 
 
-    public function proximoEndereco($espaco_predio, $ultima_caixa, $espaco_ocupado)
+    public function __construct(
+        protected CaixaService $caixaService,
+        protected RastreabilidadeService $rastreabilidadeService
+    ) {}
+
+    public function proximoEndereco($espaco_ocupado)
     {
+        //ultima caixa lançada no sistema por ordem de numero (número é unico e ordem descrescente)
+        $ultima_caixa = $this->caixaService->ultimaCaixa();
+
+        $espaco_predio = $this->espacoDisponivelPredio($ultima_caixa);
+
         //validação do proximo endereço
         $proximo_endereco = (object) array('caixa_id' => '', 'predio_id' => '', 'andar_id' => '', 'ordem' => '');
 
@@ -88,6 +102,98 @@ class DocumentoService {
 
             GROUP BY predio_id'
         );
+    }
+
+    public function enderecar(
+        $caixaId,
+        $documento,
+        $espaco_ocupado,
+        $observacao,
+        $ordem,
+        $predio_id,
+        $andar_id
+    ) : Documento
+    {
+
+
+        if($documento->status === 'arquivado'){
+            throw new \Error('O documento já está endereçado', 404);
+        }
+
+        //verifica se a caixa existe / se não cria uma caixa nova
+        $caixa = Caixa::find($caixaId);
+
+
+        if($caixa){
+            //alterar caixa
+            $caixa->update([
+                'espaco_ocupado' => (int) $espaco_ocupado + (int) $caixa->espaco_ocupado,
+                'espaco_disponivel' => (int) $caixa->espaco_disponivel - (int) $espaco_ocupado,
+                'status' => ((int) $caixa->espaco_disponivel - (int) $espaco_ocupado) == 0 ? 'ocupado' : 'disponivel',
+                'predio_id' => $predio_id,
+                'andar_id' => $andar_id,
+            ]);
+
+        }else{
+            //criar caixa
+            $caixa = Caixa::create(
+                [
+                    'numero' => $numero_caixa,
+                    'espaco_total' => 80,
+                    'espaco_ocupado' => $espaco_ocupado,
+                    'espaco_disponivel' => 80 - $espaco_ocupado,
+                    'predio_id' => $predio_id,
+                    'andar_id' => $andar_id,
+                ]
+            );
+        }
+
+        $documento->update([
+            'espaco_ocupado' => $espaco_ocupado,
+            'status' => 'arquivado',
+            'caixa_id' => $caixa->id,
+            'predio_id' => $predio_id,
+            'observacao' => $observacao,
+            'ordem' => $ordem
+        ]);
+
+        $this->rastreabilidadeService->create(
+            'arquivar',
+            $documento->id,
+            Auth()->user()->id,
+            'Registro manual de arquivamento'
+        );
+
+        return $documento;
+    }
+
+    public function create(
+        string $documento,
+        int    $tipo_documento_id,
+        string $nome,
+        string $cpf,
+        string|null $vencimento,
+        string|null $valor,
+        string $user_id
+    ): Documento
+    {
+        try{
+
+            $documento = Documento::create([
+                'documento' => $documento,
+                'tipo_documento_id' => $tipo_documento_id,
+                'nome_cooperado' => $nome,
+                'cpf_cooperado' => $cpf,
+                'vencimento_operacao' => Carbon::parse($vencimento) ?? null,
+                'valor_operacao' => $valor ?? null,
+                'user_id' => $user_id,
+            ]);
+
+            return $documento;
+
+        }catch(Exception $e){
+            throw new Exception($e->getMessage());
+        }
     }
 
 }

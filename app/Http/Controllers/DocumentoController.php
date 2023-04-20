@@ -25,6 +25,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\HeadingRowImport;
+use Illuminate\Support\Facades\Auth;
 
 class DocumentoController extends Controller
 {
@@ -36,7 +37,8 @@ class DocumentoController extends Controller
     public function __construct(
         Documento $documento,
         protected CaixaService $caixaService,
-        protected DocumentoService $documentoService
+        protected DocumentoService $documentoService,
+        protected RastreabilidadeService $rastreabilidadeService,
     )
     {
         $this->documento = $documento;
@@ -159,15 +161,8 @@ class DocumentoController extends Controller
 
             $espaco_ocupado = $request->get('espaco_ocupado');
 
-            //ultima caixa lançada no sistema por ordem de numero (número é unico e ordem descrescente)
-            $ultima_caixa = $this->caixaService->ultimaCaixa();
-
-            $espaco_predio = $this->documentoService->espacoDisponivelPredio($ultima_caixa);
-
             //pegar proximo endereço
             $proximo_endereco = $this->documentoService->proximoEndereco(
-                $espaco_predio,
-                $ultima_caixa,
                 $espaco_ocupado
             );
 
@@ -195,64 +190,59 @@ class DocumentoController extends Controller
             //iniciar um transação de dados
             DB::beginTransaction();
 
-            $numero_documento = $request->get('numero');
-            $id = $request->get('id');
-            $ordem = $request->get('ordem');
-            $observacao = $request->get('observacao');
-            $espaco_ocupado = floatval($request->get('espaco_ocupado'));
+            //atributos somente na pagina de enderecamento
+            $documentoId = $request->get('id');
             $numero_caixa = $request->get('numero_caixa');
             $andar_id = (int) $request->get('andar_id');
             $predio_id = Unidade::getIdPredio($request->get('predio_id'));
+            $ordem = $request->get('ordem');
+
+            //atributo virá tanto do novo dossie ou na pagina de endereçamento
+            $numero_documento = $request->get('documento');
+            $espaco_ocupado = floatval($request->get('espaco_ocupado'));
+            $observacao = $request->get('observacao');
+            //atributo virá tanto do novo dossie ou na pagina de endereçamento
 
             //pegar informações do documento a ser endereçado
-            $documento = $this->documento->find($id);
+            $documento = Documento::find($documentoId);
 
-            if($documento->status === 'arquivado'){
-                throw new \Error('O documento já está endereçado', 404);
-            }
+            if(!$documento){
+                //para endereçamento manual irá cair nessa regra
+                $nome_cooperado = $request->get('nome');
+                $cpf_cooperado = $request->get('cpf');
+                $valor_operacao = $request->get('valor');
+                $vencimento_operacao = $request->get('vencimento');
+                $tipo_documento_id = $request->get('tipo_documento_id');
 
-            //verifica se a caixa existe / se não cria uma caixa nova
-            $caixa = Caixa::find($numero_caixa);
-
-            if($caixa){
-                //alterar caixa
-                $caixa->update([
-                    'espaco_ocupado' => (int) $espaco_ocupado + (int) $caixa->espaco_ocupado,
-                    'espaco_disponivel' => (int) $caixa->espaco_disponivel - (int) $espaco_ocupado,
-                    'status' => ((int) $caixa->espaco_disponivel - (int) $espaco_ocupado) == 0 ? 'ocupado' : 'disponivel',
-                    'predio_id' => $predio_id,
-                    'andar_id' => $andar_id,
-                ]);
-
-            }else{
-                //criar caixa
-                $caixa = Caixa::create(
-                    [
-                        'numero' => $numero_caixa,
-                        'espaco_total' => 80,
-                        'espaco_ocupado' => $espaco_ocupado,
-                        'espaco_disponivel' => 80 - $espaco_ocupado,
-                        'predio_id' => $predio_id,
-                        'andar_id' => $andar_id,
-                    ]
+                $documento = $this->documentoService->create(
+                    $numero_documento,
+                    $tipo_documento_id,
+                    $nome_cooperado,
+                    $cpf_cooperado,
+                    $vencimento_operacao,
+                    $valor_operacao,
+                    Auth::user()->id
                 );
             }
 
-            $documento->update([
-                'espaco_ocupado' => $espaco_ocupado,
-                'status' => 'arquivado',
-                'caixa_id' => $caixa->id,
-                'predio_id' => $predio_id,
-                'observacao' => $observacao,
-                'ordem' => $ordem
-            ]);
-
-            RastreabilidadeService::create(
-                'arquivar',
-                $documento->id,
-                Auth()->user()->id,
-                'Registro manual de arquivamento'
+            //pegar proximo endereço
+            $proximo_endereco = $this->documentoService->proximoEndereco(
+                $espaco_ocupado
             );
+
+            dd($numero_caixa);
+
+            $documentoEnderecado = $this->documentoService->enderecar(
+                is_null($numero_caixa) ? $$proximo_endereco->caixa_id : $numero_caixa,
+                $documento,
+                $espaco_ocupado,
+                $observacao,
+                is_null($ordem) ? $proximo_endereco->ordem : $ordem,
+                is_null($predio_id) ? $proximo_endereco->predio_id : $predio_id,
+                is_null($andar_id) ? $proximo_endereco->andar_id : $andar_id,
+            );
+
+
 
             return ResponseService::default(['type' => 'update', 'route' => 'documento.espaco_disponivel']);
 
@@ -301,17 +291,25 @@ class DocumentoController extends Controller
         try {
             DB::beginTransaction();
 
-            $documento = Documento::create([
-                'documento' => $request->get('documento'),
-                'tipo_documento_id' => $request->get('tipo_documento_id'),
-                'nome_cooperado' => $request->get('nome'),
-                'cpf_cooperado' => $request->get('cpf'),
-                'vencimento_operacao' => Carbon::parse($request->get('vencimento')) ?? null,
-                'valor_operacao' => $request->get('valor') ?? null,
-                'user_id' => $request->get('user_id'),
-            ]);
+            $documento = $request->get('documento');
+            $tipo_documento_id = $request->get('tipo_documento_id');
+            $nome_cooperado = $request->get('nome');
+            $cpf_cooperado = $request->get('cpf');
+            $vencimento_operacao = Carbon::parse($request->get('vencimento')) ?? null;
+            $valor_operacao = $request->get('valor') ?? null;
+            $user_id = $request->get('user_id');
 
-            RastreabilidadeService::create(
+            $documento = $this->documentoService->create(
+                $documento,
+                $tipo_documento_id,
+                $nome_cooperado,
+                $cpf_cooperado,
+                $vencimento_operacao,
+                $valor_operacao,
+                $user_id
+            );
+
+            $this->rastreabilidadeService->create(
                 'cadastrar',
                 $documento->id,
                 $request->get('user_id'),

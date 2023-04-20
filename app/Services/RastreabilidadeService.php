@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 
 class RastreabilidadeService {
 
-    public static function create($operacao, $documentoId, $userId, $descricao)
+    public function create($operacao, $documentoId, $userId, $descricao)
     {
         try{
 
