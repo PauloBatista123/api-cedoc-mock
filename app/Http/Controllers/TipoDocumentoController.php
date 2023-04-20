@@ -65,7 +65,8 @@ class TipoDocumentoController extends Controller
             $tipoDocumento = $this->tipoDocumento->create([
                 'descricao' => $request->descricao,
                 'temporalidade' => $request->temporalidade,
-                'user_id' => $request->user_id
+                'user_id' => $request->user_id,
+                'tipo_temporalidade' => $request->tipo_temporalidade
             ]);
 
             return new TipoDocumentoResource($tipoDocumento, ['route' => 'tipo-documento.store', 'type' => 'store']);
