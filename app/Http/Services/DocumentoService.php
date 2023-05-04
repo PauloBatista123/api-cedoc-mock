@@ -22,19 +22,19 @@ class DocumentoService {
     {
         //ultima caixa lançada no sistema por ordem de numero (número é unico e ordem descrescente)
         $ultima_caixa = $this->caixaService->ultimaCaixa();
-
         $espaco_predio = $this->espacoDisponivelPredio($ultima_caixa);
 
         //validação do proximo endereço
         $proximo_endereco = (object) array('caixa_id' => '', 'predio_id' => '', 'andar_id' => '', 'ordem' => '');
 
-        if($espaco_predio->espaco_disponivel_total == 0 || $espaco_predio->total_caixas === 63 && $ultima_caixa->espaco_disponivel < $espaco_ocupado){
+        if((int) $espaco_predio->espaco_disponivel_total == 0 && $espaco_predio->total_caixas === 63 && $ultima_caixa->espaco_disponivel < $espaco_ocupado){
             //não existe espaço no predio e total de caixas já atingiu o máximo
             $proximo_endereco->predio_id = $espaco_predio->predio_id + 1;
             $proximo_endereco->caixa_id = $ultima_caixa->id + 1;
             $proximo_endereco->andar_id = ++$ultima_caixa->andar_id > 9 ? 1 : $ultima_caixa->andar_id;
             $proximo_endereco->ordem = Documento::ordem($ultima_caixa->id + 1);
-        }else if($espaco_predio->espaco_disponivel_total == 0 && $espaco_predio->total_caixas < 63 && $ultima_caixa->espaco_disponivel == 0 || $ultima_caixa->espaco_disponivel < $espaco_ocupado){
+
+        }else if((int) $espaco_predio->espaco_disponivel_total == 0 && $espaco_predio->total_caixas < 63 && $ultima_caixa->espaco_disponivel == 0 || $ultima_caixa->espaco_disponivel < $espaco_ocupado){
             //não existe espaço no predio, não atingiu o total de caixas, no entanto, a ultimoa caixa não possui espaço
             $proximo_endereco->predio_id = $espaco_predio->predio_id;
             $proximo_endereco->caixa_id = $ultima_caixa->id + 1;
@@ -138,7 +138,7 @@ class DocumentoService {
             //criar caixa
             $caixa = Caixa::create(
                 [
-                    'numero' => $numero_caixa,
+                    'numero' => $caixaId,
                     'espaco_total' => 80,
                     'espaco_ocupado' => $espaco_ocupado,
                     'espaco_disponivel' => 80 - $espaco_ocupado,
@@ -178,6 +178,16 @@ class DocumentoService {
     ): Documento
     {
         try{
+
+            if(Documento::where(
+                [
+                    ['documento', '=', $documento],
+                    ['tipo_documento_id', '=', $tipo_documento_id],
+                    ['cpf_cooperado', '=', $cpf]
+                ],
+            )->count()){
+                throw new \Error('O documento já existe no sistema', 404);
+            }
 
             $documento = Documento::create([
                 'documento' => $documento,

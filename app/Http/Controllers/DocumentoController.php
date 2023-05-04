@@ -193,9 +193,7 @@ class DocumentoController extends Controller
             //atributos somente na pagina de enderecamento
             $documentoId = $request->get('id');
             $numero_caixa = $request->get('numero_caixa');
-            $andar_id = (int) $request->get('andar_id');
-            $predio_id = Unidade::getIdPredio($request->get('predio_id'));
-            $ordem = $request->get('ordem');
+            $andar_id = $request->get('andar_id');
 
             //atributo virá tanto do novo dossie ou na pagina de endereçamento
             $numero_documento = $request->get('documento');
@@ -230,19 +228,22 @@ class DocumentoController extends Controller
                 $espaco_ocupado
             );
 
-            dd($numero_caixa);
+
+            $predio_id = Unidade::getIdPredio(
+                is_null($request->get('predio_id')) ? $proximo_endereco->predio_id : $request->get('predio_id')
+            );
+
+            $ordem = Documento::ordem(is_null($numero_caixa) ? $proximo_endereco->caixa_id : $numero_caixa);
 
             $documentoEnderecado = $this->documentoService->enderecar(
-                is_null($numero_caixa) ? $$proximo_endereco->caixa_id : $numero_caixa,
+                is_null($numero_caixa) ? $proximo_endereco->caixa_id : $numero_caixa,
                 $documento,
                 $espaco_ocupado,
                 $observacao,
-                is_null($ordem) ? $proximo_endereco->ordem : $ordem,
-                is_null($predio_id) ? $proximo_endereco->predio_id : $predio_id,
+                $ordem,
+                $predio_id,
                 is_null($andar_id) ? $proximo_endereco->andar_id : $andar_id,
             );
-
-
 
             return ResponseService::default(['type' => 'update', 'route' => 'documento.espaco_disponivel']);
 
