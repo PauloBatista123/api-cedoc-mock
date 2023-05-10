@@ -248,7 +248,16 @@ class DocumentoController extends Controller
                 is_null($andar_id) ? $proximo_endereco->andar_id : $andar_id,
             );
 
-            return ResponseService::default(['type' => 'update', 'route' => 'documento.espaco_disponivel']);
+            return response()->json([
+                'status' => true,
+                'msg' => 'Documento salvo com sucesso!',
+                'documento' => [
+                    'ordem' => $ordem,
+                    'predio' => $predio_id,
+                    'andar' => is_null($andar_id) ? $proximo_endereco->andar_id : $andar_id,
+                    'caixa' => is_null($numero_caixa) ? $proximo_endereco->caixa_id : $numero_caixa
+                ]
+            ], 200);
 
             //comit de trsanações
             DB::commit();
@@ -488,9 +497,22 @@ class DocumentoController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function espaco_ocupado($id, Request $request)
     {
-        //
+        try{
+
+            $documento = $this->documentoService->findById($id);
+
+            if($this->documentoService->alterar_espaco_ocupado($documento, $request->get('espaco_ocupado'))){
+                return response()->json([
+                    'error' => false,
+                    'msg' => 'Espaço alterado com sucesso!'
+                ]);
+            };
+
+        } catch (\Throwable|Exception $e) {
+            return ResponseService::exception('documento.editar.espaco_ocupado', null, $e);
+        }
     }
 
     public function filtro(Request $request)

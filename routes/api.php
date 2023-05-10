@@ -4,6 +4,7 @@ use App\Http\Controllers\CaixaController;
 use App\Http\Controllers\DocumentoController;
 use App\Http\Controllers\EnderecoController;
 use App\Http\Controllers\LoginSecurityController;
+use App\Http\Controllers\RepactuacaoController;
 use App\Http\Controllers\TipoDocumentoController;
 use App\Http\Controllers\UnidadeController;
 use App\Http\Controllers\UserController;
@@ -62,6 +63,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/documento/importar/progress', [DocumentoController::class, 'progress_batch'])->name('documento.importar.progress');
         Route::get('/documento/importar/progress/{id}', [DocumentoController::class, 'buscar_progress_batch'])->name('documento.importar.progress.buscar');
         Route::get('/documento/importar/now/{id}', [DocumentoController::class, 'buscar_progress_now'])->name('documento.importar.progress.now');
+        Route::post('/documento/espaco-ocupado/{id}', [DocumentoController::class, 'espaco_ocupado'])->name('documento.editar.espaco_ocupado');
 
         // routes caixas
         Route::get('/caixa', [CaixaController::class, 'index'])->name('caixa.show');
@@ -69,6 +71,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/caixa/{id}', [CaixaController::class, 'update'])->name('caixa.update');
         Route::delete('/caixa/{id}', [CaixaController::class, 'destroy'])->name('caixa.destroy');
         Route::post('/caixa', [CaixaController::class, 'store'])->name('caixa.store');
+
+        // routes para repactuação
+        Route::put('/repacutar/fila/{id}', [RepactuacaoController::class, 'salvar_fila_repactuacao'])->name('repactuacao.salvar_fila_repactuacao');
+        Route::get('/repacutar/fila', [RepactuacaoController::class, 'fila'])->name('repactuacao.fila');
+
     });
 
     Route::prefix('2fa')->group(function(){

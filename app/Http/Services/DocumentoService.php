@@ -206,4 +206,34 @@ class DocumentoService {
         }
     }
 
+    /**
+     * Busca o documento de acordo com o id.
+     *
+     * @param  int  $id
+     * @return Documento
+     */
+
+    public function findById(int $id)
+    {
+        return Documento::find($id);
+    }
+
+    /**
+     * Alterar o espaço ocupado de um documento individual
+     *
+     * @param  Documento  $documento
+     * @param  mixed  $espaco_ocupado
+     * @return bool
+     */
+
+    public function alterar_espaco_ocupado(
+        Documento $documento,
+        mixed $espaco_ocupado
+    )
+    {
+        return $documento->update([
+            'espaco_ocupado' => $espaco_ocupado
+        ]);
+    }
+
 }
