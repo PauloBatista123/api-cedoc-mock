@@ -121,32 +121,9 @@ class DocumentoService {
         }
 
         //verifica se a caixa existe / se não cria uma caixa nova
-        $caixa = Caixa::find($caixaId);
-
-
-        if($caixa){
-            //alterar caixa
-            $caixa->update([
-                'espaco_ocupado' => (int) $espaco_ocupado + (int) $caixa->espaco_ocupado,
-                'espaco_disponivel' => (int) $caixa->espaco_disponivel - (int) $espaco_ocupado,
-                'status' => ((int) $caixa->espaco_disponivel - (int) $espaco_ocupado) == 0 ? 'ocupado' : 'disponivel',
-                'predio_id' => $predio_id,
-                'andar_id' => $andar_id,
-            ]);
-
-        }else{
-            //criar caixa
-            $caixa = Caixa::create(
-                [
-                    'numero' => $caixaId,
-                    'espaco_total' => 80,
-                    'espaco_ocupado' => $espaco_ocupado,
-                    'espaco_disponivel' => 80 - $espaco_ocupado,
-                    'predio_id' => $predio_id,
-                    'andar_id' => $andar_id,
-                ]
-            );
-        }
+        $caixa = $this->caixaService->alterar_espaco(
+            $caixaId, $espaco_ocupado, $predio_id, $andar_id
+        );
 
         $documento->update([
             'espaco_ocupado' => $espaco_ocupado,
@@ -213,7 +190,7 @@ class DocumentoService {
      * @return Documento
      */
 
-    public function findById(int $id)
+    public function findById(int $id): Documento
     {
         return Documento::find($id);
     }

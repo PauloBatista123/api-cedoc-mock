@@ -13,6 +13,7 @@ use App\Services\RastreabilidadeService;
 use App\Services\ResponseService;
 use Carbon\Carbon;
 use App\Models\Documento;
+use App\Models\Unidade;
 use Exception;
 use DB;
 
@@ -106,4 +107,62 @@ class RepactuacaoController extends Controller
 
         }
     }
+
+     /**
+     * salvar endereços repactuados.
+     *
+     * @param  mixed $id
+     * @return \Illuminate\Http\Response
+     */
+
+     public function enderecar(Request $request)
+     {
+        try {
+            //iniciar um transação de dados
+            DB::beginTransaction();
+
+            //receber parametros
+            $andar_id = $request->get('andar_id');
+            $espaco_ocupado = $request->get('espaco_ocupado');
+            $numero_caixa = $request->get('numero_caixa');
+            $observacao = $request->get('observacao');
+            $predio_id = $request->get('predio_id');
+            $documentos = $request->get('documentos');
+            $documento_pai_id = (int) $request->get('documento_pai_id');
+
+            $predio_id =  (int) Unidade::getIdPredio(
+                is_null($request->get('predio_id')) ? $proximo_endereco->predio_id : $request->get('predio_id')
+            );
+
+            $ordem = Documento::ordem(is_null($numero_caixa) ? $proximo_endereco->caixa_id : $numero_caixa);
+
+            $this->repactuacaoService->enderecar(
+                $documentos,
+                $numero_caixa,
+                $espaco_ocupado,
+                $observacao,
+                $ordem,
+                $predio_id,
+                $andar_id,
+                $documento_pai_id
+            );
+
+            DB::commit();
+
+            return response()->json([
+                'error' => false,
+                'msg' => 'Documentos endereçados com sucesso'
+            ], 200);
+
+        } catch (\Exception $e) {
+
+            DB::rollback();
+
+            return response()->json([
+                'error' => true,
+                'msg' => 'Ocorreu um erro ao realizar o endereçamento',
+                'detalhe' => $e->getMessage()
+            ], 500);
+        }
+     }
 }

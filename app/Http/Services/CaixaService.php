@@ -48,4 +48,40 @@ class CaixaService {
                     ->orderBy('caixas.id', 'desc')
                     ->get();
     }
+
+    public function alterar_espaco(
+        int $caixaId,
+        int $espaco_ocupado,
+        int $predio_id,
+        int $andar_id
+    ): Caixa
+    {
+        //verifica se a caixa existe / se não cria uma caixa nova
+        $caixa = Caixa::find($caixaId);
+
+
+        if($caixa){
+            //alterar caixa
+            $caixa->update([
+                'espaco_ocupado' => (int) $espaco_ocupado + (int) $caixa->espaco_ocupado,
+                'espaco_disponivel' => (int) $caixa->espaco_disponivel - (int) $espaco_ocupado,
+                'status' => ((int) $caixa->espaco_disponivel - (int) $espaco_ocupado) == 0 ? 'ocupado' : 'disponivel',
+            ]);
+
+        }else{
+            //criar caixa
+            $caixa = Caixa::create(
+                [
+                    'numero' => $caixaId,
+                    'espaco_total' => 80,
+                    'espaco_ocupado' => $espaco_ocupado,
+                    'espaco_disponivel' => 80 - $espaco_ocupado,
+                    'predio_id' => $predio_id,
+                    'andar_id' => $andar_id,
+                ]
+            );
+        }
+
+        return $caixa;
+    }
 }

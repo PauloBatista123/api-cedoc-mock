@@ -7,6 +7,7 @@ use App\Http\Controllers\LoginSecurityController;
 use App\Http\Controllers\RepactuacaoController;
 use App\Http\Controllers\TipoDocumentoController;
 use App\Http\Controllers\UnidadeController;
+use App\Http\Controllers\PredioController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -73,8 +74,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/caixa', [CaixaController::class, 'store'])->name('caixa.store');
 
         // routes para repactuação
-        Route::put('/repacutar/fila/{id}', [RepactuacaoController::class, 'salvar_fila_repactuacao'])->name('repactuacao.salvar_fila_repactuacao');
-        Route::get('/repacutar/fila', [RepactuacaoController::class, 'fila'])->name('repactuacao.fila');
+        Route::put('/repactuar/fila/{id}', [RepactuacaoController::class, 'salvar_fila_repactuacao'])->name('repactuacao.salvar_fila_repactuacao');
+        Route::get('/repactuar/fila', [RepactuacaoController::class, 'fila'])->name('repactuacao.fila');
+        Route::post('/repactuar/enderecar', [RepactuacaoController::class, 'enderecar'])->name('repactuacao.enderecar');
+
+        // ruoutes predios
+        Route::get('/predios/disponiveis', [PredioController::class, 'disponiveis'])->name('predios.disponiveis');
+
 
     });
 
