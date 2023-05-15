@@ -30,4 +30,5 @@ class RastreabilidadeService {
             throw $e;
         }
     }
+
 }

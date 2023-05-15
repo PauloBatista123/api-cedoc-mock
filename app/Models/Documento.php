@@ -54,6 +54,11 @@ class Documento extends Model
         return $this->hasMany(Rastreabilidade::class, 'documento_id', 'id');
     }
 
+    public function repactuacoes()
+    {
+        return $this->hasMany(Repactuacao::class, 'aditivo_id', 'id');
+    }
+
      /**
      * Scope a query to only include users of a given type.
      *

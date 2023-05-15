@@ -53,6 +53,7 @@ class DocumentoController extends Controller
         try {
 
             $query = $this->documento->with(['tipoDocumento', 'caixa.predio', 'usuario'])
+            ->withCount('repactuacoes')
             ->when($request->get('documento'), function ($query) use ($request) {
                 return $query->where('documento', '=', $request->get('documento'));
             })
@@ -60,15 +61,23 @@ class DocumentoController extends Controller
                 return $query->where('cpf_cooperado', '=', $request->get('cpf'));
             })
             ->when($request->get('status'), function ($query) use ($request) {
-                return $query->whereIn('status', $request->get('status'));
+                if(\is_array($request->get('status'))){
+                    if(in_array('repactuacao', $request->get('status'))){
+                        $query->whereHas('repactuacoes');
+                    }
+                    $query->whereIn('status', $request->get('status'));
+
+                    return $query;
+                }
+                return $query->where('status', $request->get('status'));
             }, function ($query){
                 return $query->where('status', 'alocar');
             })->when($request->get('predio_id'), function ($query) use ($request) {
                 $query->where('predio_id', '=', $request->get('predio_id'));
             })->when($request->get('tipo_documento_id'), function ($query) use ($request) {
                 return $query->where('tipo_documento_id', '=', $request->get('tipo_documento_id'));
-            })->when($request->get('caixa'), function ($query) use ($request) {
-                return $query->where('caixa_id', '=', $request->get('caixa'));
+            })->when($request->get('caixa_id'), function ($query) use ($request) {
+                return $query->where('caixa_id', '=', $request->get('caixa_id'));
             })->when($request->get('ordenar_campo'), function ($query) use ($request) {
                 return $query->orderBy(
                     $request->get('ordenar_campo'),

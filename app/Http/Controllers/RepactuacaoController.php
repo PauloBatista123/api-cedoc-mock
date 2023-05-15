@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 
-use App\Http\Resources\Documento\DocumentoCollectionResource;
+use App\Http\Resources\Repactuacao\RepactuacaoCollectionResource;
 use App\Http\Resources\Documento\DocumentoResource;
 use App\Http\Services\CaixaService;
 use App\Http\Services\DocumentoService;
@@ -13,6 +13,7 @@ use App\Services\RastreabilidadeService;
 use App\Services\ResponseService;
 use Carbon\Carbon;
 use App\Models\Documento;
+use App\Models\Repactuacao;
 use App\Models\Unidade;
 use Exception;
 use DB;
@@ -20,12 +21,16 @@ use DB;
 class RepactuacaoController extends Controller
 {
 
+    private $repactuacao;
+
     public function __construct(
         protected CaixaService $caixaService,
         protected DocumentoService $documentoService,
         protected RepactuacaoService $repactuacaoService,
+        Repactuacao $repactuacao,
     )
     {
+        $this->repactuacao = $repactuacao;
     }
 
     /**
@@ -63,7 +68,7 @@ class RepactuacaoController extends Controller
             })
             ->get();
 
-            return new DocumentoCollectionResource($query);
+            return new RepactuacaoCollectionResource($query);
 
         } catch (\Throwable|Exception $e) {
 
@@ -107,6 +112,47 @@ class RepactuacaoController extends Controller
 
         }
     }
+
+    /**
+     * Deletar da fila documento.
+     *
+     * @param  mixed $id
+     * @return \Illuminate\Http\Response
+     */
+
+     public function deletar_fila_repactuacao(
+        mixed $id
+    )
+    {
+        try {
+
+            DB::beginTransaction();
+
+            $documento = $this->documentoService->findById($id);
+
+            dd($documento->rastreabilidades);
+
+            $repactuacao = $this->repactuacaoService->deletar_fila(
+                $documento
+            );
+
+            DB::commit();
+
+            return response()->json([
+                'error' => false,
+                'msg' => 'Documento deletado da fila de repactuação'
+            ]);
+
+        } catch (\Throwable $th) {
+
+            DB::rollback();
+
+            return ResponseService::exception('documento.espaco_disponivel', null, $th);
+
+        }
+    }
+
+
 
      /**
      * salvar endereços repactuados.
@@ -165,4 +211,32 @@ class RepactuacaoController extends Controller
             ], 500);
         }
      }
+
+     /**
+     * Listar todas as repactuacoes.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function lista(Request $request)
+    {
+        try {
+
+            $aditivo_id = $request->get('aditivo_id');
+
+
+            $query = Repactuacao::with(['aditivo.tipoDocumento', 'aditivo.caixa.predio', 'documento.tipoDocumento'])
+            ->select('repactuacoes.aditivo_id', 'repactuacoes.documento_id', 'repactuacoes.user_id')
+            ->when($aditivo_id, function($query) use ($aditivo_id) {
+                $query->where('repactuacoes.aditivo_id', $aditivo_id);
+            })
+            ->orderBy('repactuacoes.created_at')
+            ->paginate(10);
+
+            return new RepactuacaoCollectionResource($query);
+
+        } catch (\Throwable|Exception $e) {
+
+            return ResponseService::exception('repactuacao.lista', null, $e);
+        }
+    }
 }

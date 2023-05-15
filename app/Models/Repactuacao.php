@@ -11,6 +11,7 @@ class Repactuacao extends Model
 
     protected $table = 'repactuacoes';
 
+    protected $with = ['usuario'];
 
     protected $fillable = [
         'documento_id', 'user_id', 'aditivo_id'
@@ -24,6 +25,11 @@ class Repactuacao extends Model
     public function aditivo()
     {
         return $this->belongsTo(Documento::class, 'aditivo_id', 'id');
+    }
+
+    public function documento()
+    {
+        return $this->belongsTo(Documento::class, 'documento_id', 'id');
     }
 
 }

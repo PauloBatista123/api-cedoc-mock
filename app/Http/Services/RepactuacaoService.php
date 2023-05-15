@@ -42,6 +42,39 @@ class RepactuacaoService {
 
     }
 
+    /**
+     * Função para remover o documento da fila
+     *
+     * @param Documento $documento
+     * @param string $status
+     */
+    public function remover_fila(
+        Documento $documento
+    )
+    {
+
+        try{
+            //salvar rastreabilidade do documento
+            // $this->rastreabilidadeService->create(
+            //     'alterar',
+            //     $documento->id,
+            //     Auth::user()->id,
+            //     'Documento removida da fila de repactuações'
+            // );
+
+            dd($documento->rastreabilidades);
+
+            //alterar status para fila de repactuação
+            // $documento->update([
+            //     'status' => 'fila_repactuacao',
+            // ]);
+
+        }catch(\Exception $e){
+            throw new \Error($e->getMessage());
+        }
+
+    }
+
 
     /**
      * Função para remover o endereço do documento
