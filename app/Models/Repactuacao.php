@@ -11,8 +11,6 @@ class Repactuacao extends Model
 
     protected $table = 'repactuacoes';
 
-    protected $with = ['usuario'];
-
     protected $fillable = [
         'documento_id', 'user_id', 'aditivo_id'
     ];

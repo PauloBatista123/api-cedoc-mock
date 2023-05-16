@@ -78,7 +78,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/repactuar/fila', [RepactuacaoController::class, 'fila'])->name('repactuacao.fila');
         Route::post('/repactuar/enderecar', [RepactuacaoController::class, 'enderecar'])->name('repactuacao.enderecar');
         Route::get('/repactuar/lista', [RepactuacaoController::class, 'lista'])->name('repactuacao.lista');
-        Route::put('/repactuar/fila/deletar/{id}', [RepactuacaoController::class, 'deletar_fila_repactuacao'])->name('repactuacao.deletar_fila_repactuacao');
+        Route::put('/repactuar/fila/deletar/{id}', [RepactuacaoController::class, 'remover_fila_repactuacao'])->name('repactuacao.remover_fila_repactuacao');
 
         // ruoutes predios
         Route::get('/predios/disponiveis', [PredioController::class, 'disponiveis'])->name('predios.disponiveis');

@@ -76,8 +76,8 @@ class DocumentoController extends Controller
                 $query->where('predio_id', '=', $request->get('predio_id'));
             })->when($request->get('tipo_documento_id'), function ($query) use ($request) {
                 return $query->where('tipo_documento_id', '=', $request->get('tipo_documento_id'));
-            })->when($request->get('caixa_id'), function ($query) use ($request) {
-                return $query->where('caixa_id', '=', $request->get('caixa_id'));
+            })->when($request->get('caixa'), function ($query) use ($request) {
+                return $query->where('caixa_id', '=', $request->get('caixa'));
             })->when($request->get('ordenar_campo'), function ($query) use ($request) {
                 return $query->orderBy(
                     $request->get('ordenar_campo'),

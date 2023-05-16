@@ -121,8 +121,12 @@ class DocumentoService {
         }
 
         //verifica se a caixa existe / se não cria uma caixa nova
-        $caixa = $this->caixaService->alterar_espaco(
-            $caixaId, $espaco_ocupado, $predio_id, $andar_id
+        $caixa = $this->caixaService->alterar_conteudo_caixa(
+            $caixaId,
+            $espaco_ocupado,
+            $predio_id,
+            $andar_id,
+            'entrada'
         );
 
         $documento->update([

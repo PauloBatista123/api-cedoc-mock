@@ -66,7 +66,10 @@ class RepactuacaoController extends Controller
             }, function ($query) use ($request) {
                 return $query->orderBy('ordem');
             })
-            ->get();
+            ->get()->map(function($item){
+                $item->total_espaco = (float) $item->repactuacoes->sum('documento.espaco_ocupado');
+                return $item;
+            });
 
             return new RepactuacaoCollectionResource($query);
 
@@ -120,7 +123,7 @@ class RepactuacaoController extends Controller
      * @return \Illuminate\Http\Response
      */
 
-     public function deletar_fila_repactuacao(
+     public function remover_fila_repactuacao(
         mixed $id
     )
     {
@@ -130,9 +133,7 @@ class RepactuacaoController extends Controller
 
             $documento = $this->documentoService->findById($id);
 
-            dd($documento->rastreabilidades);
-
-            $repactuacao = $this->repactuacaoService->deletar_fila(
+            $this->repactuacaoService->remover_fila(
                 $documento
             );
 

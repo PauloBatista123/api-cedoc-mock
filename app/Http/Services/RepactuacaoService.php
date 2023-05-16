@@ -34,6 +34,7 @@ class RepactuacaoService {
             //alterar status para fila de repactuação
             $documento->update([
                 'status' => 'fila_repactuacao',
+                'status_anterior' => $documento->status
             ]);
 
         }catch(\Exception $e){
@@ -55,19 +56,18 @@ class RepactuacaoService {
 
         try{
             //salvar rastreabilidade do documento
-            // $this->rastreabilidadeService->create(
-            //     'alterar',
-            //     $documento->id,
-            //     Auth::user()->id,
-            //     'Documento removida da fila de repactuações'
-            // );
-
-            dd($documento->rastreabilidades);
+            $this->rastreabilidadeService->create(
+                'alterar',
+                $documento->id,
+                Auth::user()->id,
+                'Documento removido da fila de repactuações'
+            );
 
             //alterar status para fila de repactuação
-            // $documento->update([
-            //     'status' => 'fila_repactuacao',
-            // ]);
+            $documento->update([
+                'status' => $documento->status_anterior,
+                'status_anterior' => null,
+            ]);
 
         }catch(\Exception $e){
             throw new \Error($e->getMessage());
@@ -99,6 +99,11 @@ class RepactuacaoService {
     /**
      * Função para endereçar documentos repactuados
      *
+     * {@internal O documento pai que está sendo alterado na repactuação irá repetir no relacionamento 'repactuacoes' no loop.
+     *            Logo será necessário sair do loop de buscas dos filhos ('continue'), para evitar duplicidade de registros.}
+     *
+     * {@internal O documento pai ('aditivo_id') será duplicado na tabela repactuacoes, seguir as intruções acima}
+     *
      * @param Documento $documento
      *
      */
@@ -117,9 +122,15 @@ class RepactuacaoService {
 
         try {
 
+            //variabel para calcular espaço dos documentos
+            $calculaEspaco = 0;
+
             foreach ($documentos as $doc) {
+
+                //buscar documento
                 $documento = $this->documentoService->findById($doc['id']);
 
+                //descrição documento
                 if(!is_null($documento->caixa_id)){
                     $descricao = 'Documento arquivado anteriormente no Prédio '.$documento->predio_id.', Caixa '.$documento->caixa_id.' Ordem '.$documento->ordem;
                 }elseif(!is_null($documento->caixa_id) && $documento->id == $documento_pai_id){
@@ -128,14 +139,56 @@ class RepactuacaoService {
                     $descricao = 'Documento não possuía endereçamento anterior, sendo seu primeiro endereço no dossiê de repactuação.';
                 }
 
+                // observação do documento
                 if(!is_null($observacao) && !is_null($doc['observacao'])){
                     $concatObservacao = "Observação Repactuação:".$observacao." \n\n Observação Anterior:".$doc['observacao'];
                 }else{
                     $concatObservacao = "Sem informações...";
                 }
 
+                //verificar se possui repactuações
+                if($documento->repactuacoes_count > 0){
+
+                    //percorrer os filhos e alterar o pai
+                    foreach ($documento->repactuacoes as $repac_filho) {
+                        $repac_filho->aditivo_id = $documento_pai_id;
+                        $repac_filho->documento->caixa_id = $caixa_id;
+                        $repac_filho->documento->predio_id = $predio_id;
+                        $repac_filho->documento->ordem = $ordem;
+                        $repac_filho->documento->status = 'repactuacao';
+                        $calculaEspaco += $repac_filho->documento->espaco_ocupado;
+
+                        $this->rastreabilidadeService->create(
+                            'repactuar',
+                            $repac_filho->documento->id,
+                            Auth()->user()->id,
+                            $descricao
+                        );
+
+                        if($repac_filho->documento->status_anterior !== 'alocar' && $repac_filho->documento->status_anterior !== null) {
+                            //função para retirar os documentos da caixa de origem
+                            $caixa = $this->caixaService->alterar_conteudo_caixa(
+                                $repac_filho->documento->caixa->id,
+                                $repac_filho->documento->espaco_ocupado,
+                                $repac_filho->documento->caixa->predio_id,
+                                $repac_filho->documento->caixa->andar_id,
+                                'saida'
+                            );
+                        }
+
+                        //atualizar o relacionamento com os filhos
+                        $documento->push();
+                    }
+
+                    //proximo loop
+                    continue;
+                }
+
+                $calculaEspaco += $documento->espaco_ocupado;
+
+                // documentos sem repactuações
                 $documento->update([
-                    'espaco_ocupado' => $doc['espaco_ocupado'],
+                    'espaco_ocupado' => $documento->espaco_ocupado,
                     'status' => 'repactuacao',
                     'caixa_id' => $caixa_id,
                     'predio_id' => $predio_id,
@@ -143,19 +196,31 @@ class RepactuacaoService {
                     'ordem' => $ordem,
                 ]);
 
-                $this->rastreabilidadeService->create(
-                    'repactuar',
-                    $documento->id,
-                    Auth()->user()->id,
-                    $descricao
-                );
+                // rastreabilidade do documento
+                $this->rastreabilidadeService->create('repactuar',$documento->id,Auth()->user()->id,$descricao);
 
+                // criar relações da repactuação
                 $this->repactuacoes($documento, $documento_pai_id);
+
+                if($documento->status_anterior !== 'alocar') {
+                    //função para retirar os documentos da caixa de origem
+                    $caixa = $this->caixaService->alterar_conteudo_caixa(
+                        $documento->caixa->id,
+                        $documento->espaco_ocupado,
+                        $documento->caixa->predio_id,
+                        $documento->caixa->andar_id,
+                        'saida'
+                    );
+                }
             }
 
-            //verifica se a caixa existe / se não cria uma caixa nova
-            $caixa = $this->caixaService->alterar_espaco(
-                $caixa_id, $espaco_ocupado, $predio_id, $andar_id
+            //função para preencher a caixa destino dos documentos
+            $caixa = $this->caixaService->alterar_conteudo_caixa(
+                $caixa_id,
+                $calculaEspaco,
+                $predio_id,
+                $andar_id,
+                'entrada'
             );
 
         } catch (\Throwable $th) {

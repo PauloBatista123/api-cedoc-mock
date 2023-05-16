@@ -4,12 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Documento extends Model
 {
     use HasFactory;
 
     protected $table = 'documentos';
+
+    protected $withCount = ['repactuacoes'];
 
     protected $fillable = [
         'documento',
@@ -26,7 +29,8 @@ class Documento extends Model
         'data_liquidacao',
         'data_expurgo',
         'ordem',
-        'user_id'
+        'user_id',
+        'status_anterior'
     ];
 
     public function caixa()
@@ -55,6 +59,11 @@ class Documento extends Model
     }
 
     public function repactuacoes()
+    {
+        return $this->hasMany(Repactuacao::class, 'aditivo_id', 'id');
+    }
+
+    public function sumRepactuacoes()
     {
         return $this->hasMany(Repactuacao::class, 'aditivo_id', 'id');
     }
