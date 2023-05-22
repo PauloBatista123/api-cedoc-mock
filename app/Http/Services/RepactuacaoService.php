@@ -1,28 +1,49 @@
 <?php
 
+/**
+ * @author Paulo Henrique Alves Batista <paulobatista.sistemas@gmail.com>
+ * @copyright 2023 - 2023
+ * @version 1.0
+ *
+ * Não alterar sem consentimento dos autores.
+ *
+ */
+
 namespace App\Http\Services;
 use App\Models\Documento;
 use App\Models\Repactuacao;
 use App\Http\Services\CaixaService;
+use App\Http\Services\LogService;
 use App\Http\Services\DocumentoService;
 use App\Services\RastreabilidadeService;
 use Illuminate\Support\Facades\Auth;
+use DB;
 
 class RepactuacaoService {
 
     public function __construct(
         protected CaixaService $caixaService,
         protected DocumentoService $documentoService,
-        protected RastreabilidadeService $rastreabilidadeService
+        protected RastreabilidadeService $rastreabilidadeService,
+        protected LogService $logService
     ) {}
 
-
+    /**
+     * Função para registrar documento na fila de espera, ou seja, alteração do status e registro de rastro
+     *
+     * @param Documento $documento
+     */
     public function salvar_fila(
         Documento $documento
     )
     {
+        $this->logService->info(
+            '(salvar_fila): Iniciado',
+            ['class' => __NAMESPACE__, 'doc' => $documento, 'user' => Auth::user()]
+        );
 
         try{
+
             //salvar rastreabilidade do documento
             $this->rastreabilidadeService->create(
                 'alterar',
@@ -36,6 +57,11 @@ class RepactuacaoService {
                 'status' => 'fila_repactuacao',
                 'status_anterior' => $documento->status
             ]);
+
+            $this->logService->info(
+                '(salvar_fila): Finalizado',
+                ['class' => __NAMESPACE__, 'doc' => $documento, 'user' => Auth::user()]
+            );
 
         }catch(\Exception $e){
             throw new \Error($e->getMessage());
@@ -54,6 +80,11 @@ class RepactuacaoService {
     )
     {
 
+        $this->logService->info(
+            '(remover_fila): Iniciado',
+            ['class' => __NAMESPACE__, 'doc' => $documento, 'user' => Auth::user()]
+        );
+
         try{
             //salvar rastreabilidade do documento
             $this->rastreabilidadeService->create(
@@ -69,7 +100,18 @@ class RepactuacaoService {
                 'status_anterior' => null,
             ]);
 
+        $this->logService->info(
+            '(remover_fila): Finalizado',
+            ['class' => __NAMESPACE__, 'doc' => $documento, 'user' => Auth::user()]
+        );
+
         }catch(\Exception $e){
+
+            $this->logService->error(
+                '(remover_fila): Exception lançada',
+                ['class' => __NAMESPACE__, 'exception' => $e]
+            );
+
             throw new \Error($e->getMessage());
         }
 
@@ -104,7 +146,14 @@ class RepactuacaoService {
      *
      * {@internal O documento pai ('aditivo_id') será duplicado na tabela repactuacoes, seguir as intruções acima}
      *
-     * @param Documento $documento
+     * @param array $documentos
+     * @param int $caixa_id
+     * @param float $espaco_ocupado
+     * @param string|null $observacao
+     * @param string|int $ordem
+     * @param int $predio_id
+     * @param int $andar_id
+     * @param int $documento_pai_id
      *
      */
 
@@ -121,6 +170,7 @@ class RepactuacaoService {
      {
 
         try {
+            DB::beginTransaction();
 
             //variabel para calcular espaço dos documentos
             $calculaEspaco = 0;
@@ -129,6 +179,7 @@ class RepactuacaoService {
 
                 //buscar documento
                 $documento = $this->documentoService->findById($doc['id']);
+
 
                 //descrição documento
                 if(!is_null($documento->caixa_id)){
@@ -140,11 +191,12 @@ class RepactuacaoService {
                 }
 
                 // observação do documento
-                if(!is_null($observacao) && !is_null($doc['observacao'])){
-                    $concatObservacao = "Observação Repactuação:".$observacao." \n\n Observação Anterior:".$doc['observacao'];
+                if(!is_null($observacao) && !is_null($documento->observacao)){
+                    $concatObservacao = "Observação Repactuação:".$observacao." \n\n Observação Anterior:".$documento->observacao;
                 }else{
                     $concatObservacao = "Sem informações...";
                 }
+
 
                 //verificar se possui repactuações
                 if($documento->repactuacoes_count > 0){
@@ -154,7 +206,7 @@ class RepactuacaoService {
                         $repac_filho->aditivo_id = $documento_pai_id;
                         $repac_filho->documento->caixa_id = $caixa_id;
                         $repac_filho->documento->predio_id = $predio_id;
-                        $repac_filho->documento->ordem = $ordem;
+                        $repac_filho->documento->ordem = (int) $ordem;
                         $repac_filho->documento->status = 'repactuacao';
                         $calculaEspaco += $repac_filho->documento->espaco_ocupado;
 
@@ -168,16 +220,16 @@ class RepactuacaoService {
                         if($repac_filho->documento->status_anterior !== 'alocar' && $repac_filho->documento->status_anterior !== null) {
                             //função para retirar os documentos da caixa de origem
                             $caixa = $this->caixaService->alterar_conteudo_caixa(
-                                $repac_filho->documento->caixa->id,
+                                $repac_filho->documento->getOriginal('caixa_id'),
                                 $repac_filho->documento->espaco_ocupado,
-                                $repac_filho->documento->caixa->predio_id,
+                                $repac_filho->documento->getOriginal('predio_id'),
                                 $repac_filho->documento->caixa->andar_id,
                                 'saida'
                             );
                         }
 
                         //atualizar o relacionamento com os filhos
-                        $documento->push();
+                        $repac_filho->pushQuietly();
                     }
 
                     //proximo loop
@@ -185,22 +237,6 @@ class RepactuacaoService {
                 }
 
                 $calculaEspaco += $documento->espaco_ocupado;
-
-                // documentos sem repactuações
-                $documento->update([
-                    'espaco_ocupado' => $documento->espaco_ocupado,
-                    'status' => 'repactuacao',
-                    'caixa_id' => $caixa_id,
-                    'predio_id' => $predio_id,
-                    'observacao' => $concatObservacao,
-                    'ordem' => $ordem,
-                ]);
-
-                // rastreabilidade do documento
-                $this->rastreabilidadeService->create('repactuar',$documento->id,Auth()->user()->id,$descricao);
-
-                // criar relações da repactuação
-                $this->repactuacoes($documento, $documento_pai_id);
 
                 if($documento->status_anterior !== 'alocar') {
                     //função para retirar os documentos da caixa de origem
@@ -212,6 +248,22 @@ class RepactuacaoService {
                         'saida'
                     );
                 }
+
+                // rastreabilidade do documento
+                $this->rastreabilidadeService->create('repactuar', $documento->id, Auth()->user()->id, $descricao);
+
+                // criar relações da repactuação
+                $this->repactuacoes($documento, $documento_pai_id);
+
+                // documentos sem repactuações
+                $documento->update([
+                    'espaco_ocupado' => $documento->espaco_ocupado,
+                    'status' => 'repactuacao',
+                    'caixa_id' => $caixa_id,
+                    'predio_id' => $predio_id,
+                    'observacao' => $concatObservacao,
+                    'ordem' => $ordem,
+                ]);
             }
 
             //função para preencher a caixa destino dos documentos
@@ -223,10 +275,19 @@ class RepactuacaoService {
                 'entrada'
             );
 
+            DB::commit();
+
         } catch (\Throwable $th) {
+            DB::rollback();
             throw $th;
         }
      }
+
+     /**
+      * Função para cadastrar relacionamento entre documetnos na tabela repactuações
+      * @param Documento $documento
+      * @param int $documento_pai_id Id do documento que será registrado como aditivo_id para vincular com outros documentos
+      */
 
      public function repactuacoes(
         Documento $documento,

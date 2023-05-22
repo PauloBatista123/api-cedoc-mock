@@ -26,6 +26,7 @@ use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\HeadingRowImport;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Arr;
 
 class DocumentoController extends Controller
 {
@@ -63,15 +64,13 @@ class DocumentoController extends Controller
             ->when($request->get('status'), function ($query) use ($request) {
                 if(\is_array($request->get('status'))){
                     if(in_array('repactuacao', $request->get('status'))){
-                        $query->whereHas('repactuacoes');
+                        $status = Arr::where($request->get('status'), fn($value, $key) => $value !== 'repactuacao');
+                        return $query->whereHas('repactuacoes')->orWhereIn('status', $status);
                     }
                     $query->whereIn('status', $request->get('status'));
-
                     return $query;
                 }
                 return $query->where('status', $request->get('status'));
-            }, function ($query){
-                return $query->where('status', 'alocar');
             })->when($request->get('predio_id'), function ($query) use ($request) {
                 $query->where('predio_id', '=', $request->get('predio_id'));
             })->when($request->get('tipo_documento_id'), function ($query) use ($request) {
@@ -110,7 +109,7 @@ class DocumentoController extends Controller
     public function buscar_enderecamento(Request $request)
     {
         try{
-            $espaco_ocupado = $request->get('espaco_ocupado');
+            $espaco_ocupado = (float) $request->get('espaco_ocupado');
             $tipo_documento_id = $request->get('tipo_documento_id');
             $cpf_cooperado = $request->get('cpf_cooperado');
             $numero = $request->get('numero');
@@ -129,10 +128,9 @@ class DocumentoController extends Controller
             $ultima_caixa = $this->caixaService->ultimaCaixa();
 
             $espaco_predio = $this->documentoService->espacoDisponivelPredio($ultima_caixa);
+
             //pegar proximo endereço
             $proximo_endereco = $this->documentoService->proximoEndereco(
-                $espaco_predio,
-                $ultima_caixa,
                 $espaco_ocupado
             );
 
@@ -171,7 +169,7 @@ class DocumentoController extends Controller
 
         try{
 
-            $espaco_ocupado = $request->get('espaco_ocupado');
+            $espaco_ocupado = (float) $request->get('espaco_ocupado');
 
             //pegar proximo endereço
             $proximo_endereco = $this->documentoService->proximoEndereco(
@@ -191,7 +189,7 @@ class DocumentoController extends Controller
      }
 
     /**
-     * Salvar endereço em um documento.
+     * Função para salvar endereçamento de um documento.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
@@ -209,7 +207,7 @@ class DocumentoController extends Controller
 
             //atributo virá tanto do novo dossie ou na pagina de endereçamento
             $numero_documento = $request->get('documento');
-            $espaco_ocupado = floatval($request->get('espaco_ocupado'));
+            $espaco_ocupado = (float) $request->get('espaco_ocupado');
             $observacao = $request->get('observacao');
             //atributo virá tanto do novo dossie ou na pagina de endereçamento
 
@@ -408,7 +406,7 @@ class DocumentoController extends Controller
                 throw new Exception("Não encontramos as colunas:".implode(",", $diff));
             }
 
-            (new NewDocumentosImport($request->user()->id))->import($request->file('arquivo'), 'public', \Maatwebsite\Excel\Excel::XLSX);
+            (new NewDocumentosImport($request->user()->id, $this->rastreabilidadeService))->import($request->file('arquivo'), 'public', \Maatwebsite\Excel\Excel::XLSX);
 
             return response()->json([
                 'message' => 'Arquivo enviado com sucesso',

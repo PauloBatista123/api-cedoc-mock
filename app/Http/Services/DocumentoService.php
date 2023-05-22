@@ -9,16 +9,25 @@ use App\Http\Services\CaixaService;
 use App\Services\RastreabilidadeService;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Http\Services\LogService;
+use Illuminate\Support\Facades\Auth;
 
 class DocumentoService {
 
 
     public function __construct(
         protected CaixaService $caixaService,
-        protected RastreabilidadeService $rastreabilidadeService
+        protected RastreabilidadeService $rastreabilidadeService,
+        protected LogService $logService
     ) {}
 
-    public function proximoEndereco($espaco_ocupado)
+    /**
+     * Função para retornar proximo endereço do sistema
+     *
+     * @param float $espaco_ocupado
+     * @return array
+     */
+    public function proximoEndereco(float $espaco_ocupado)
     {
         //ultima caixa lançada no sistema por ordem de numero (número é unico e ordem descrescente)
         $ultima_caixa = $this->caixaService->ultimaCaixa();
@@ -51,7 +60,12 @@ class DocumentoService {
         return $proximo_endereco;
     }
 
-    public function espacoDisponivelPredio($ultima_caixa)
+    /**
+     * Função para retornar espaço disponivel no prédio
+     *
+     * @param Caixa $ultima_caixa
+     */
+    public function espacoDisponivelPredio(Caixa $ultima_caixa)
     {
         //total de caixas por predio - considerando ultima caixa recomendada pelo sistema
         $espaco_predio = DB::select(
@@ -104,17 +118,32 @@ class DocumentoService {
         );
     }
 
+    /**
+     * Função para registrar endereço do documento
+     *
+     * @param int|string $caixaId
+     * @param Documento $documento
+     * @param float $espaco_ocupado
+     * @param null|string $observacao
+     * @param int|string $ordem
+     * @param int|string $predio_id
+     * @param int|string $andar_id
+     */
     public function enderecar(
-        $caixaId,
-        $documento,
-        $espaco_ocupado,
-        $observacao,
-        $ordem,
-        $predio_id,
-        $andar_id
+        int|string $caixaId,
+        Documento $documento,
+        float $espaco_ocupado,
+        null|string $observacao,
+        int|string $ordem,
+        int|string $predio_id,
+        int|string $andar_id
     ) : Documento
     {
-
+        //log
+        $this->logService->info(
+            '(enderecar): Iniciado',
+            ['class' => __NAMESPACE__, 'parametros' => ['caixaId' => $caixaId, 'documento' => $documento, 'espaco_ocupado' => $espaco_ocupado, 'observacao' => $observacao, 'ordem' => $ordem, 'predio_id' => $predio_id, 'andar_id' => $andar_id], 'user' => Auth::user()]
+        );
 
         if($documento->status === 'arquivado'){
             throw new \Error('O documento já está endereçado', 404);
@@ -143,6 +172,11 @@ class DocumentoService {
             $documento->id,
             Auth()->user()->id,
             'Registro manual de arquivamento'
+        );
+
+        $this->logService->info(
+            '(enderecar): Finalizado',
+            ['class' => __NAMESPACE__, 'documento' => $documento, 'user' => Auth::user()]
         );
 
         return $documento;

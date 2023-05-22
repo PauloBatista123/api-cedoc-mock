@@ -17,7 +17,7 @@ return [
     |
     */
 
-    'default' => env('LOG_CHANNEL', 'stack'),
+    'default' => env('LOG_CHANNEL', 'daily'),
 
     /*
     |--------------------------------------------------------------------------
@@ -76,6 +76,15 @@ return [
             'username' => 'Laravel Log',
             'emoji' => ':boom:',
             'level' => env('LOG_LEVEL', 'critical'),
+        ],
+
+        'json' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/laravel.json'),
+            'level' => 'debug',
+            'days' => 14,
+            'handler' => Monolog\Handler\LogglyHandler::class,
+            'formatter' => Monolog\Formatter\JsonFormatter::class,
         ],
 
         'papertrail' => [

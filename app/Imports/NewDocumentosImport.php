@@ -31,12 +31,17 @@ class NewDocumentosImport implements ToCollection, WithHeadingRow, ShouldQueue, 
 
     public $log = [];
     protected $user;
+    protected $rastreabilidadeService;
 
-    public function __construct($user)
+    public function __construct(
+        $user,
+        $rastreabilidadeService
+    )
     {
         $this->prepareStatus();
         $this->setInput(['status' => 'progress']);
         $this->user = $user;
+        $this->rastreabilidadeService = $rastreabilidadeService;
     }
 
 
@@ -92,7 +97,7 @@ class NewDocumentosImport implements ToCollection, WithHeadingRow, ShouldQueue, 
                 ],
             );
 
-            RastreabilidadeService::create(
+            $this->rastreabilidadeService->create(
                 'cadastrar',
                 $documento->id,
                 $this->user,

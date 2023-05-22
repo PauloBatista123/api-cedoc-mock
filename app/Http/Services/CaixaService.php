@@ -13,6 +13,13 @@ class CaixaService {
         return Caixa::orderByDesc('caixas.id')->first();
     }
 
+    /**
+     * Função para consulta de caixas com espaço disponivel
+     *
+     * @param float $espaco_ocupado
+     * @param int|string $predio_id
+     * @return Illuminate\Database\Eloquent\Collection
+    */
     public function espacoDisponivel($espaco_ocupado, $predio_id)
     {
         return Caixa::
@@ -64,7 +71,7 @@ class CaixaService {
      */
     public function alterar_conteudo_caixa(
         int $caixaId,
-        int $espaco_ocupado,
+        float $espaco_ocupado,
         int $predio_id,
         int $andar_id,
         string $operacao
@@ -73,12 +80,16 @@ class CaixaService {
         //verifica se a caixa existe / se não cria uma caixa nova
         $caixa = Caixa::find($caixaId);
 
+
         if($caixa){
             //alterar caixa
+            $espaco_ocupado_caixa = $operacao === 'entrada' ? $espaco_ocupado + (float) $caixa->espaco_ocupado : (float) $caixa->espaco_ocupado - (float) $espaco_ocupado;
+            $espaco_disponivel_caixa = $operacao === 'entrada' ? (float) $caixa->espaco_disponivel - (float) $espaco_ocupado : (float) $caixa->espaco_disponivel + (float) $espaco_ocupado;
+
             $caixa->update([
-                'espaco_ocupado' => $operacao === 'entrada' ? (int) $espaco_ocupado + (int) $caixa->espaco_ocupado : (int) $espaco_ocupado - (int) $caixa->espaco_ocupado,
-                'espaco_disponivel' => $operacao === 'entrada' ? (int) $caixa->espaco_disponivel - (int) $espaco_ocupado : (int) $caixa->espaco_disponivel + (int) $espaco_ocupado,
-                'status' => ((int) $caixa->espaco_disponivel - (int) $espaco_ocupado) == 0 ? 'ocupado' : 'disponivel',
+                'espaco_ocupado' => $espaco_ocupado_caixa,
+                'espaco_disponivel' => $espaco_disponivel_caixa,
+                'status' => $espaco_disponivel_caixa == 0 ? 'ocupado' : 'disponivel',
             ]);
 
         }else{

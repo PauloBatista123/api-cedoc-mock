@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * @author Paulo Henrique Alves Batista <paulobatista.sistemas@gmail.com>
+ * @copyright 2023 - 2023
+ * @version 1.0
+ *
+ * Não alterar sem consentimento dos autores.
+ *
+ */
+
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
@@ -17,6 +26,7 @@ use App\Models\Repactuacao;
 use App\Models\Unidade;
 use Exception;
 use DB;
+use Illuminate\Support\Facades\Log;
 
 class RepactuacaoController extends Controller
 {
@@ -43,7 +53,6 @@ class RepactuacaoController extends Controller
      public function fila(Request $request)
      {
         try {
-
             $query = Documento::with(['tipoDocumento'])
             ->when($request->get('documento'), function ($query) use ($request) {
                 return $query->where('documento', '=', $request->get('documento'));
@@ -165,9 +174,6 @@ class RepactuacaoController extends Controller
      public function enderecar(Request $request)
      {
         try {
-            //iniciar um transação de dados
-            DB::beginTransaction();
-
             //receber parametros
             $andar_id = $request->get('andar_id');
             $espaco_ocupado = $request->get('espaco_ocupado');
@@ -194,16 +200,12 @@ class RepactuacaoController extends Controller
                 $documento_pai_id
             );
 
-            DB::commit();
-
             return response()->json([
                 'error' => false,
                 'msg' => 'Documentos endereçados com sucesso'
             ], 200);
 
         } catch (\Exception $e) {
-
-            DB::rollback();
 
             return response()->json([
                 'error' => true,
