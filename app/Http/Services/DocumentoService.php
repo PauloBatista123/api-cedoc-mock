@@ -5,6 +5,7 @@ namespace App\Http\Services;
 use App\Models\Documento;
 use App\Models\Unidade;
 use App\Models\Caixa;
+use App\Models\TipoDocumento;
 use App\Http\Services\CaixaService;
 use App\Services\RastreabilidadeService;
 use Illuminate\Support\Facades\DB;
@@ -249,6 +250,46 @@ class DocumentoService {
         return $documento->update([
             'espaco_ocupado' => $espaco_ocupado
         ]);
+    }
+
+    /**
+     * Função para alterar o tipo documental do dossie
+     *
+     * @param  Documento  $documento
+     * @param  TipoDocumento  $tipo_documento_id
+     * @return bool
+     */
+     public function alterar_tipo_documental(
+        Documento $documento,
+        TipoDocumento $tipoDocumento
+    )
+    {
+        try {
+            DB::beginTransaction();
+
+            if($tipoDocumento->digital === 1){
+                $documento->status = 'arquivado';
+
+                $this->rastreabilidadeService->create(
+                    'alterar',
+                    $documento->id,
+                    Auth()->user()->id,
+                    "Alteração do tipo documental:
+                    {$documento->tipoDocumento->descricao} para {$tipoDocumento->descricao}"
+                );
+            }
+
+            $documento->tipo_documento_id = $tipoDocumento->id;
+            $documento->save();
+
+            DB::commit();
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            throw new Exception('Erro ao alterar o documento:'.$e->getMessage());
+        }
+
     }
 
 }

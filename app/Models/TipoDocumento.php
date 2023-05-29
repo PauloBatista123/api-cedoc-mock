@@ -12,7 +12,7 @@ class TipoDocumento extends Model
     protected $table = 'tipo_documentos';
 
     protected $fillable = [
-        'descricao', 'temporalidade', 'user_id'
+        'descricao', 'temporalidade', 'user_id', 'digital', 'tipo_temporalidade'
     ];
 
     public function usuario()

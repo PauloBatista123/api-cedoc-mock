@@ -5,6 +5,7 @@ namespace App\Imports;
 use App\Models\Documento;
 use App\Services\RastreabilidadeService;
 use Carbon\Carbon;
+use App\Models\TipoDocumento;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -88,12 +89,13 @@ class NewDocumentosImport implements ToCollection, WithHeadingRow, ShouldQueue, 
                 [
                     'documento' => $row['documento'],
                     'tipo_documento_id' => $row['tipo_documental'],
-                    'cpf_cooperado' => $cpfReplace
+                    'cpf_cooperado' => $cpfReplace,
                 ],
                 [
                     'nome_cooperado' => $row['cliente'],
                     'vencimento_operacao' => $row['vencimento'] !== "00/01/1900" ? Carbon::createFromFormat('d/m/Y', $row['vencimento']) : null,
                     'valor_operacao' => $row['vlr_operacao'] ?? null,
+                    'status' => TipoDocumento::find($row['tipo_documental'])->digital === 1 ? 'arquivado': 'alocar'
                 ],
             );
 

@@ -10,6 +10,7 @@ use App\Models\TipoDocumento;
 use App\Services\ResponseService;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class TipoDocumentoController extends Controller
 {
@@ -65,8 +66,9 @@ class TipoDocumentoController extends Controller
             $tipoDocumento = $this->tipoDocumento->create([
                 'descricao' => $request->descricao,
                 'temporalidade' => $request->temporalidade,
-                'user_id' => $request->user_id,
-                'tipo_temporalidade' => $request->tipo_temporalidade
+                'user_id' => Auth::user()->id,
+                'tipo_temporalidade' => $request->tipo_temporalidade,
+                'digital' => (bool) $request->digital
             ]);
 
             return new TipoDocumentoResource($tipoDocumento, ['route' => 'tipo-documento.store', 'type' => 'store']);
@@ -125,7 +127,9 @@ class TipoDocumentoController extends Controller
             $tipoDocumento->update([
                 'descricao' => $request->descricao,
                 'temporalidade' => $request->temporalidade,
-                'user_id' => $request->user_id,
+                'user_id' => Auth::user()->id,
+                'tipo_temporalidade' => $request->tipo_temporalidade,
+                'digital' => (bool) $request->digital
             ]);
 
             return new TipoDocumentoResource($tipoDocumento, ['route' => 'tipo-documento.update', 'type' => 'update']);

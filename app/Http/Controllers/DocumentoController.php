@@ -9,6 +9,7 @@ use App\Http\Resources\Documento\DocumentoResource;
 use App\Http\Resources\ImportacaoCollectionResource;
 use App\Http\Resources\ImportacaoResource;
 use App\Http\Services\CaixaService;
+use App\Http\Services\TipoDocumentoService;
 use App\Http\Services\DocumentoService;
 use App\Imports\NewDocumentosImport;
 use App\Jobs\ProcessImportDossie;
@@ -39,6 +40,7 @@ class DocumentoController extends Controller
         Documento $documento,
         protected CaixaService $caixaService,
         protected DocumentoService $documentoService,
+        protected TipoDocumentoService $tipoDocumentoService,
         protected RastreabilidadeService $rastreabilidadeService,
     )
     {
@@ -252,7 +254,7 @@ class DocumentoController extends Controller
                 $observacao,
                 $ordem,
                 $predio_id,
-                is_null($andar_id) ? $proximo_endereco->andar_id : $andar_id,
+                is_null($andar_id) ? $proximo_endereco->andar_id : Caixa::find($numero_caixa)->andar_id,
             );
 
             return response()->json([
@@ -261,7 +263,7 @@ class DocumentoController extends Controller
                 'documento' => [
                     'ordem' => $ordem,
                     'predio' => $predio_id,
-                    'andar' => is_null($andar_id) ? $proximo_endereco->andar_id : $andar_id,
+                    'andar' => is_null($andar_id) ? $proximo_endereco->andar_id : Caixa::find($numero_caixa)->andar_id,
                     'caixa' => is_null($numero_caixa) ? $proximo_endereco->caixa_id : $numero_caixa
                 ]
             ], 200);
@@ -346,18 +348,6 @@ class DocumentoController extends Controller
 
             return ResponseService::exception('documento.store', null, $e);
         }
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
     }
 
     /**
@@ -527,10 +517,9 @@ class DocumentoController extends Controller
         try {
 
             $predio = $request->get('predio_id');
-            $andar = $request->get('andar_id');
             $espaco_ocupado = $request->get('espaco_ocupado');
 
-            $caixas = $this->caixaService->espacoDisponivelManual($espaco_ocupado, $predio, $andar);
+            $caixas = $this->caixaService->espacoDisponivelManual($espaco_ocupado, $predio);
 
              return response()->json([
                 'caixas' => $caixas
@@ -541,5 +530,31 @@ class DocumentoController extends Controller
         }
     }
 
+    /**
+     * Função para alterar o tipo documental
+     *
+     * @param int|string $id
+     *
+     */
+    public function alterar_tipo_documental(int|string $id, Request $request)
+    {
+        try {
 
+            $documento = $this->documentoService->findById($id);
+            $tipoDocumento = $this->tipoDocumentoService->findById($request->get('tipo_documento_id'));
+
+            $this->documentoService->alterar_tipo_documental(
+                $documento,
+                $tipoDocumento
+            );
+
+             return response()->json([
+                'error' => false,
+                'message' => 'Tipo documental alterado com sucesso!'
+             ]);
+
+        } catch (\Exception $e) {
+            return ResponseService::exception('documento.editar.tipo_documental', $id, $e);
+        }
+    }
 }

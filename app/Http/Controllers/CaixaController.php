@@ -37,8 +37,6 @@ class CaixaController extends Controller
             })
             ->when($request->get('status'), function ($query) use ($request) {
                 return $query->where('status', '=', $request->get('status'));
-            }, function ($query){
-                return $query->where('status', 'disponivel');
             })->when($request->get('predio_id'), function ($query) use ($request) {
                 $query->where('predio_id', '=', $request->get('predio_id'));
             })->when($request->get('andar_id'), function ($query) use ($request) {

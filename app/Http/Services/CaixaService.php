@@ -8,6 +8,15 @@ use Illuminate\Support\Facades\DB;
 
 class CaixaService {
 
+    public function __construct(
+        protected DocumentoService $documentoService,
+    ) {}
+
+     /**
+     * Função que retorna a ultima caixa
+     *
+     * @return Caixa
+    */
     public function ultimaCaixa()
     {
         return Caixa::orderByDesc('caixas.id')->first();
@@ -38,7 +47,7 @@ class CaixaService {
                     ->paginate(8);
     }
 
-    public function espacoDisponivelManual($espaco_ocupado, $predio_id, $andar_id)
+    public function espacoDisponivelManual($espaco_ocupado, $predio_id)
     {
         return Caixa::
                     leftjoin('documentos', function ($join) {
@@ -49,7 +58,6 @@ class CaixaService {
                     ->when($predio_id, function ($query) use ($predio_id) {
                         $query->where('caixas.predio_id', $predio_id);
                     })
-                    ->where('caixas.andar_id', $andar_id)
                     ->whereNot('caixas.id', $this->ultimaCaixa()->id)
                     ->groupBy('caixas.id')
                     ->orderBy('caixas.id', 'desc')
@@ -97,9 +105,9 @@ class CaixaService {
             $caixa = Caixa::create(
                 [
                     'numero' => $caixaId,
-                    'espaco_total' => 80,
+                    'espaco_total' => 13,
                     'espaco_ocupado' => $espaco_ocupado,
-                    'espaco_disponivel' => 80 - $espaco_ocupado,
+                    'espaco_disponivel' => 13 - $espaco_ocupado,
                     'predio_id' => $predio_id,
                     'andar_id' => $andar_id,
                 ]
@@ -107,5 +115,45 @@ class CaixaService {
         }
 
         return $caixa;
+    }
+
+    /**
+     * Função para criar uma próxima caixa manual
+     *
+     * @return Caixa
+     */
+    public function criar_caixa_manual()
+    {
+        try {
+
+            $ultima_caixa = $this->caixaService->ultimaCaixa();
+            $espaco_predio = $this->documentoService->espacoDisponivelPredio($ultima_caixa);
+
+            if((int) $espaco_predio->espaco_disponivel_total == 0 && $espaco_predio->total_caixas === 63){
+                $predio_id = Unidade::getIdPredio(
+                    $espaco_predio->predio_id + 1
+                );
+            }else if((int) $espaco_predio->espaco_disponivel_total == 0 && $espaco_predio->total_caixas < 63){
+                $predio_id = Unidade::getIdPredio(
+                    $espaco_predio->predio_id
+                );
+            }
+
+            $andar = Unidade::localizacaoAndar($espaco_predio->total_caixas);
+
+            $caixa = Caixa::create(
+                [
+                    'numero' => (int) $this->ultimaCaixa()->numero + 1,
+                    'espaco_total' => 13,
+                    'espaco_ocupado' => 0,
+                    'espaco_disponivel' => 0,
+                    'predio_id' => $predio_id,
+                    'andar_id' => $andar,
+                ]
+            );
+
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
     }
 }

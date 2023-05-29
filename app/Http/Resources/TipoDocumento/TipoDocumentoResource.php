@@ -36,6 +36,7 @@ class TipoDocumentoResource extends JsonResource
             'descricao' => $this->descricao,
             'temporalidade' => $this->temporalidade,
             'usuario' => $this->usuario,
+            'digital' => (bool) $this->digital,
             'created_at' => Carbon::parse($this->created_at)->format('d/m/Y H:i:s'),
             'updated_at' => Carbon::parse($this->updated_at)->format('d/m/Y H:i:s'),
         ];

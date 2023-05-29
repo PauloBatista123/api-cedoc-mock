@@ -63,6 +63,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/documento/importar/progress/{id}', [DocumentoController::class, 'buscar_progress_batch'])->name('documento.importar.progress.buscar');
         Route::get('/documento/importar/now/{id}', [DocumentoController::class, 'buscar_progress_now'])->name('documento.importar.progress.now');
         Route::post('/documento/espaco-ocupado/{id}', [DocumentoController::class, 'espaco_ocupado'])->name('documento.editar.espaco_ocupado');
+        Route::patch('/documento/tipo-documento/{id}', [DocumentoController::class, 'alterar_tipo_documental'])->name('documento.editar.tipo_documental');
 
         // routes caixas
         Route::get('/caixa', [CaixaController::class, 'index'])->name('caixa.show');

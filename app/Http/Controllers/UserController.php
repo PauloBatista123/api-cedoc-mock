@@ -27,7 +27,7 @@ class UserController extends Controller
                 return response()->json([
                     'error' => true,
                     'message' => $validator->errors()
-                ], 401);
+                ], 403);
             }
 
             $result = LdapService::connect($request->get('email'), $request->get('password'));
@@ -36,7 +36,7 @@ class UserController extends Controller
                 return response()->json([
                     'error' => true,
                     'message' => 'Email ou senha inválidos.',
-                ], 401);
+                ], 403);
             }
 
             $user = User::firstOrCreate([
@@ -56,6 +56,7 @@ class UserController extends Controller
                     'name' => $user->name,
                     'email' => $user->email,
                     'id' => $user->id,
+                    'description' => $result['description'],
                     'doisFatores' => boolval($loginSecurity)
                 ],
                 'token' => $user->createToken($user->name, ['server:create', 'server:update'])->plainTextToken

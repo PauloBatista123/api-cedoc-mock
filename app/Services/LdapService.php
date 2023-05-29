@@ -37,6 +37,7 @@ Class LdapService{
             return [
                 'user' => $firtsName.' '.$lastName,
                 'connect' => true,
+                'description' => $result['description'][0]
             ];
         }else{
             return false;

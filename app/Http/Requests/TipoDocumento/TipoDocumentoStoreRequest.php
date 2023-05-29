@@ -27,7 +27,8 @@ class TipoDocumentoStoreRequest extends FormRequest
         return [
             'descricao' => 'required|max:191',
             'temporalidade' => 'required',
-            'user_id' => 'required'
+            'tipo_temporalidade' => 'required',
+            'digital' => 'required'
         ];
     }
 
@@ -37,7 +38,8 @@ class TipoDocumentoStoreRequest extends FormRequest
             'descricao.required' => 'o campo :attribute é obrigatório',
             'descricao.max' => 'o campo :attribute pode conter no máximo :max caracteres',
             'temporalidade.required' => 'o campo :attribute é obrigatório',
-            'user_id.required' => 'o campo :attribute é obrigatório',
+            'tipo_temporalidade.required' => 'o campo :attribute é obrigatório',
+            'digital' => 'o campo :attribute é obrigatório',
         ];
     }
 
